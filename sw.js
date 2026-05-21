@@ -1,4 +1,4 @@
-const CACHE_NAME = 'butbi-pwa-network-first-v3';
+const CACHE_NAME = 'butbi-pwa-strong-sync-v4';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -17,22 +17,16 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  // Never cache Supabase/API calls. Always go to network.
   if (url.hostname.includes('supabase.co')) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
 
-  // For the app shell and HTML navigation, always try network first.
-  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .catch(() => caches.match(event.request))
-    );
+  if (event.request.mode === 'navigate' || event.request.destination === 'document' || url.pathname === '/') {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
 
-  // Static assets: network first, cache only as fallback.
   event.respondWith(
     fetch(event.request)
       .then(response => {

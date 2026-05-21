@@ -2,7 +2,7 @@
   "name": "Bảng theo dõi bé Bút Bi",
   "short_name": "Bút Bi",
   "description": "Thời gian biểu, bảng công việc và nhắc trước giờ học 5 phút.",
-  "start_url": "/",
+  "start_url": "/?pwa=v4",
   "scope": "/",
   "display": "standalone",
   "background_color": "#EEF7FC",
