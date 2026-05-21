@@ -380,6 +380,18 @@ tr:hover .row-controls { opacity: 1; }
   font-weight: 800; padding: 1px 5px; margin-top: 2px;
 }
 
+/* Icon picker */
+.icon-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.icon-pick-btn {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 5px 9px;
+  cursor: pointer; font-size: 1rem;
+  transition: all .12s; line-height: 1;
+  display: flex; align-items: center; gap: 4px;
+}
+.icon-pick-btn span { font-size: 0.7rem; font-weight: 700; color: var(--text-light); }
+.icon-pick-btn:hover { background: var(--sky-light); border-color: var(--sky); }
+
 /* Loading */
 #loading {
   display: flex; align-items: center; justify-content: center;
@@ -564,6 +576,10 @@ footer {
       <div class="form-group full">
         <label>Tên nhiệm vụ (áp dụng cho các ngày chọn)</label>
         <input type="text" id="f-task" placeholder="Ví dụ: Toán, Tiếng Anh, Game..."/>
+      </div>
+      <div class="form-group full">
+        <label>Icon nhanh</label>
+        <div class="icon-picks" id="icon-picks"></div>
       </div>
       <div class="form-group full">
         <label>Áp dụng cho ngày</label>
@@ -857,6 +873,7 @@ function openRowModal(id=null){
   }
   renderDayChecks();
   renderSwatches('color-swatches',()=>selColor,c=>{selColor=c;});
+  renderIconPicker('f-task');
   document.getElementById('row-modal').classList.add('open');
 }
 function closeRowModal(){ document.getElementById('row-modal').classList.remove('open'); }
@@ -1138,20 +1155,56 @@ function saveRewards(){
   localStorage.setItem('rewards_v1',JSON.stringify(rewards));
 }
 
+// ── Icon picker ──
+const QUICK_ICONS = [
+  {icon:'📚', label:'Học'},
+  {icon:'✏️', label:'Viết'},
+  {icon:'📖', label:'Đọc'},
+  {icon:'⚽', label:'Bóng'},
+  {icon:'🏊', label:'Bơi'},
+  {icon:'🎮', label:'Game'},
+  {icon:'🎨', label:'Vẽ'},
+  {icon:'🎵', label:'Nhạc'},
+  {icon:'🍽️', label:'Ăn'},
+  {icon:'😴', label:'Ngủ'},
+  {icon:'🧹', label:'Dọn'},
+  {icon:'🦷', label:'Vệ sinh'},
+];
+
+function renderIconPicker(inputId){
+  const c = document.getElementById('icon-picks');
+  if(!c) return;
+  c.innerHTML='';
+  QUICK_ICONS.forEach(({icon,label})=>{
+    const btn = document.createElement('button');
+    btn.type='button';
+    btn.className='icon-pick-btn';
+    btn.innerHTML=`${icon}<span>${label}</span>`;
+    btn.onclick=()=>{
+      const inp = document.getElementById(inputId);
+      // Prepend icon if not already there, else replace icon at start
+      const cur = inp.value.trim();
+      const hasIcon = [...QUICK_ICONS].some(x=>cur.startsWith(x.icon));
+      inp.value = hasIcon ? cur.replace(/^\S+\s*/,icon+' ') : icon+' '+cur;
+      inp.focus();
+    };
+    c.appendChild(btn);
+  });
+}
 function openRewardModal(){
-  // Populate subject dropdown from current stats
-  const wk=getWeekKey(weekOffset);
-  const subjects=new Set();
+  // Populate dropdown from schedule + chores
+  const subjects = new Map();
   rows.forEach(row=>{
     if(row.type!=='task') return;
     for(let i=0;i<7;i++){
       const t=row.tasks&&row.tasks[i];
-      if(t&&t.name) subjects.add(t.name);
+      if(t&&t.name) subjects.set(t.name,'📅 Thời khóa biểu');
     }
   });
+  chores.forEach(ch=>{ if(ch.name) subjects.set(ch.name,'🧹 Công việc'); });
   const sel=document.getElementById('rf-subject');
-  sel.innerHTML='<option value="">-- Chọn môn --</option>';
-  subjects.forEach(s=>{ sel.innerHTML+=`<option value="${s}">${s}</option>`; });
+  sel.innerHTML='<option value="">-- Chọn hoạt động --</option>';
+  subjects.forEach((label,name)=>{ sel.innerHTML+=`<option value="${name}">${name} (${label})</option>`; });
   document.getElementById('rf-pct').value='';
   document.getElementById('rf-reward').value='';
   document.getElementById('reward-modal').classList.add('open');
@@ -1178,7 +1231,7 @@ function deleteReward(id){
 
 function renderRewards(){
   const wk=getWeekKey(weekOffset);
-  // Build stats map
+  // Build combined stats map (schedule + chores)
   const map={};
   rows.forEach(row=>{
     if(row.type!=='task') return;
@@ -1189,6 +1242,15 @@ function renderRewards(){
       map[t.name].total++;
       if(done[`${wk}_${row.id}_${i}`]) map[t.name].done++;
     }
+  });
+  // Add chore stats
+  chores.forEach(ch=>{
+    if(!ch.name) return;
+    if(!map[ch.name]) map[ch.name]={done:0,total:0};
+    (ch.days||[]).forEach(i=>{
+      map[ch.name].total++;
+      if(choreDone[`${wk}_${ch.id}_${i}`]) map[ch.name].done++;
+    });
   });
 
   const grid=document.getElementById('rewards-grid');
