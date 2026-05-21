@@ -4,6 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bảng theo dõi và khen thưởng bé Bút Bi ⭐</title>
+<meta name="theme-color" content="#87CEEB"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Bút Bi"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -96,6 +103,25 @@ header h1 {
 .week-nav button:hover { background: var(--sky); border-color: #6BBCD8; }
 .week-label { font-weight: 700; font-size: 0.9rem; color: var(--text); }
 .week-label span { color: #1A7AAF; }
+
+
+/* ── PWA INSTALL ── */
+.btn-install { background: #fff; color: #1A7AAF; border: 1.5px solid var(--border); }
+.btn-install.hidden { display: none; }
+.pwa-tip {
+  display: none;
+  margin: 8px 16px 0;
+  background: #fff;
+  border: 1.5px dashed #6BBCD8;
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+.pwa-tip.show { display: block; }
+.pwa-tip button { float: right; border: 0; background: transparent; font-size: 1rem; cursor: pointer; color: var(--text-light); }
 
 /* ── TABLE ── */
 .table-wrapper { overflow-x: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
@@ -517,66 +543,9 @@ footer {
   text-align: center; padding: 16px;
   color: var(--text-light); font-size: 0.75rem; font-weight: 600;
 }
-
-
-/* ── AUTH LOGIN ── */
-#auth-screen {
-  position: fixed; inset: 0; z-index: 10000;
-  background: linear-gradient(135deg, #EEF7FC, #D6EEF8);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
-#auth-screen.hidden { display: none; }
-.auth-card {
-  background: var(--white); border-radius: 22px;
-  box-shadow: 0 12px 48px rgba(100,170,210,0.25);
-  border: 1.5px solid var(--border);
-  width: 100%; max-width: 430px; padding: 26px;
-}
-.auth-card h2 {
-  font-family: 'Baloo 2', cursive; color: #1A7AAF;
-  font-size: 1.35rem; margin-bottom: 6px;
-}
-.auth-card p { color: var(--text-light); font-weight: 600; font-size: .86rem; margin-bottom: 16px; }
-.auth-card input {
-  width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
-  padding: 11px 12px; margin-bottom: 10px; font-family: 'Quicksand', sans-serif;
-  font-weight: 700; color: var(--text); background: var(--bg);
-}
-.auth-card .btn { width: 100%; justify-content: center; margin-top: 4px; }
-.auth-switch {
-  margin-top: 12px; background: none; border: none; color: #1A7AAF;
-  font-weight: 800; cursor: pointer; font-family: 'Quicksand', sans-serif;
-}
-#auth-msg { margin-top: 10px; font-size: .82rem; font-weight: 700; color: #1A7AAF; }
-#user-bar {
-  display: none; gap: 8px; align-items: center; padding: 8px 16px 0;
-  color: var(--text-light); font-weight: 700; font-size: .78rem;
-}
-#user-bar.show { display: flex; }
-#user-bar button { margin-left: auto; }
-
 </style>
 </head>
 <body>
-
-<div id="auth-screen">
-  <div class="auth-card">
-    <h2 id="auth-title">Đăng nhập</h2>
-    <p>Đăng nhập để dữ liệu được lưu trên Supabase và đồng bộ trên nhiều thiết bị.</p>
-    <input type="email" id="auth-email" placeholder="Email" autocomplete="email"/>
-    <input type="password" id="auth-password" placeholder="Mật khẩu" autocomplete="current-password"/>
-    <button class="btn btn-primary" onclick="handleAuthSubmit()" id="auth-main-btn">Đăng nhập</button>
-    <button class="auth-switch" onclick="toggleAuthMode()" id="auth-switch-btn">Chưa có tài khoản? Tạo tài khoản</button>
-    <div id="auth-msg"></div>
-  </div>
-</div>
-
-<div id="user-bar">
-  <span id="user-email"></span>
-  <button class="btn btn-outline btn-sm" onclick="signOut()">Đăng xuất</button>
-</div>
-
 
 <header>
   <h1>⭐ Bảng theo dõi và khen thưởng bé Bút Bi</h1>
@@ -592,9 +561,14 @@ footer {
 
 <div class="controls">
   <button class="btn btn-primary" onclick="openRowModal()">＋ Thêm khung giờ</button>
+  <button class="btn btn-install hidden" id="install-pwa-btn" onclick="installPWA()">📲 Cài lên màn hình chính</button>
   <button class="btn btn-teal" onclick="openSpanModal()">＋ Thêm hàng chú thích</button>
   <button class="btn btn-outline" onclick="resetWeek()">🔄 Reset tuần</button>
   <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 Xoá tất cả</button>
+</div>
+<div class="pwa-tip" id="pwa-tip">
+  <button onclick="document.getElementById('pwa-tip').classList.remove('show')">✕</button>
+  📱 Trên iPhone/iPad: bấm nút Chia sẻ trong Safari → <b>Thêm vào Màn hình chính</b>. Sau đó mở app từ icon mới và bật thông báo.
 </div>
 
 <div class="week-nav">
@@ -805,7 +779,7 @@ footer {
 <script>
 // ── CONFIG ──
 const SUPABASE_URL = 'https://etilbevkhbissxlwspxr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_zOnqPCaQAmv8OQXlaZQP1Q_gYdiIBg9';
+const SUPABASE_KEY = 'sb_publishable_MtRy2v-lrvuZIx6G6nup9Q_SOFHZoM6';
 // ────────────
 
 const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ Nhật'];
@@ -832,187 +806,6 @@ let selColor = TASK_COLORS[0];
 let selCellColor = TASK_COLORS[0];
 let selSpanColor = SPAN_COLORS[0].val;
 let checkedDays = new Set([0,1,2,3,4,5,6]);
-let authMode = 'login';
-let accessToken = localStorage.getItem('bb_access_token') || '';
-let refreshToken = localStorage.getItem('bb_refresh_token') || '';
-let currentUser = null;
-
-function setAppVisible(show){
-  ['HEADER','.notif-bar','.controls','.week-nav','.table-wrapper','.chore-section','.stats-section','.rewards-section','footer','#user-bar'].forEach(sel=>{
-    const el = sel === 'HEADER' ? document.querySelector('header') : document.querySelector(sel);
-    if(el) el.style.display = show ? '' : 'none';
-  });
-  document.getElementById('auth-screen').classList.toggle('hidden', show);
-  document.getElementById('user-bar').classList.toggle('show', show);
-}
-
-function toggleAuthMode(){
-  authMode = authMode === 'login' ? 'signup' : 'login';
-  document.getElementById('auth-title').textContent = authMode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản';
-  document.getElementById('auth-main-btn').textContent = authMode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản';
-  document.getElementById('auth-switch-btn').textContent = authMode === 'login' ? 'Chưa có tài khoản? Tạo tài khoản' : 'Đã có tài khoản? Đăng nhập';
-  document.getElementById('auth-msg').textContent = '';
-}
-
-async function handleAuthSubmit(){
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const msg = document.getElementById('auth-msg');
-  if(!email || !password){ msg.textContent = 'Vui lòng nhập email và mật khẩu.'; return; }
-  if(password.length < 6){ msg.textContent = 'Mật khẩu cần ít nhất 6 ký tự.'; return; }
-  msg.textContent = 'Đang xử lý...';
-  try{
-    if(authMode === 'signup'){
-      const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
-        body:JSON.stringify({email,password})
-      });
-      const data = await r.json();
-      if(!r.ok) throw new Error(data.msg || data.message || 'Không tạo được tài khoản');
-      msg.textContent = 'Đã tạo tài khoản. Bấm đăng nhập để vào app.';
-      authMode = 'login'; toggleAuthMode(); toggleAuthMode();
-      return;
-    }
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
-      body:JSON.stringify({email,password})
-    });
-    const data = await r.json();
-    if(!r.ok) throw new Error(data.error_description || data.msg || data.message || 'Sai email hoặc mật khẩu');
-    saveSession(data);
-    await startAppAfterLogin();
-  }catch(e){ msg.textContent = e.message; }
-}
-
-function saveSession(data){
-  accessToken = data.access_token || '';
-  refreshToken = data.refresh_token || '';
-  currentUser = data.user || null;
-  if(accessToken) localStorage.setItem('bb_access_token', accessToken);
-  if(refreshToken) localStorage.setItem('bb_refresh_token', refreshToken);
-}
-
-async function getCurrentUser(){
-  if(!accessToken) return null;
-  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+accessToken}
-  });
-  if(!r.ok) return null;
-  currentUser = await r.json();
-  return currentUser;
-}
-
-async function signOut(){
-  try{ await fetch(`${SUPABASE_URL}/auth/v1/logout`, {method:'POST', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+accessToken}}); }catch(e){}
-  localStorage.removeItem('bb_access_token');
-  localStorage.removeItem('bb_refresh_token');
-  accessToken=''; refreshToken=''; currentUser=null;
-  setAppVisible(false);
-}
-
-async function startAppAfterLogin(){
-  const u = await getCurrentUser();
-  if(!u){ setAppVisible(false); return; }
-  document.getElementById('user-email').textContent = 'Đang đăng nhập: ' + (u.email || 'user');
-  setAppVisible(true);
-  await initDB();
-  updateWeekLabel();
-  await loadData();
-  await loadRewards();
-  await loadChores();
-  renderTable();
-  renderStats();
-  renderRewards();
-  renderChoreTable();
-  checkNotifSupport();
-  if(Notification.permission === 'granted') scheduleNotifications();
-}
-
-// ── Supabase REST API ──
-const DB_URL = SUPABASE_URL + '/rest/v1';
-function dbHeaders(prefer='return=minimal'){
-  return {
-    'Content-Type': 'application/json',
-    'apikey': SUPABASE_KEY,
-    'Authorization': 'Bearer ' + accessToken,
-    'Prefer': prefer
-  };
-}
-
-async function dbGet(table, params=''){
-  const r = await fetch(`${DB_URL}/${table}?${params}`, {headers: dbHeaders()});
-  if(!r.ok) throw new Error(`GET ${table} failed: ${r.status}`);
-  return r.json();
-}
-async function dbInsert(table, data){
-  const r = await fetch(`${DB_URL}/${table}`, {
-    method:'POST', headers:dbHeaders('return=minimal'),
-    body: JSON.stringify(Array.isArray(data)?data:[data])
-  });
-  if(!r.ok) throw new Error(`INSERT ${table} failed: ${r.status}`);
-}
-async function dbUpsert(table, data, onConflict){
-  const r = await fetch(`${DB_URL}/${table}?on_conflict=${onConflict}`, {
-    method:'POST', headers:dbHeaders('resolution=merge-duplicates,return=minimal'),
-    body: JSON.stringify(Array.isArray(data)?data:[data])
-  });
-  if(!r.ok) throw new Error(`UPSERT ${table} failed: ${r.status}`);
-}
-async function dbDelete(table, params){
-  const r = await fetch(`${DB_URL}/${table}?${params}`, { method:'DELETE', headers: dbHeaders() });
-  if(!r.ok) throw new Error(`DELETE ${table} failed: ${r.status}`);
-}
-
-async function initDB(){
-  if(!currentUser) return false;
-  try{
-    await dbGet('schedule_rows', `select=id&user_id=eq.${currentUser.id}&limit=1`);
-    useDB = true;
-    console.log('✅ Supabase connected with user!');
-    return true;
-  }catch(e){
-    useDB = false;
-    console.error('Supabase error:', e);
-    showToast('Lỗi kết nối Supabase. Kiểm tra SQL/policy.');
-    return false;
-  }
-}
-
-async function loadData(){
-  if(useDB && currentUser){
-    try{
-      const r = await dbGet('schedule_rows', `select=*&user_id=eq.${currentUser.id}&order=start.asc`);
-      rows = r.map(x=>({...x, tasks: typeof x.tasks==='string'?JSON.parse(x.tasks):x.tasks}));
-      const wk = getWeekKey(weekOffset);
-      const c = await dbGet('completions', `select=*&user_id=eq.${currentUser.id}&week_key=eq.${wk}`);
-      done = {}; c.forEach(x=>{ done[x.completion_key]=true; }); return;
-    }catch(e){ console.error('loadData error:', e); }
-  }
-  rows=[]; done={};
-}
-
-async function saveRowsDB(){
-  if(useDB && currentUser){
-    try{
-      await dbDelete('schedule_rows', `user_id=eq.${currentUser.id}`);
-      if(rows.length) await dbInsert('schedule_rows', rows.map(r=>({...r, user_id: currentUser.id, tasks:JSON.stringify(r.tasks||{})})));
-      return;
-    }catch(e){ console.error('saveRows error:', e); showToast('Chưa lưu được lên Supabase'); }
-  }
-}
-
-async function saveComp(key, val){
-  const wk = getWeekKey(weekOffset);
-  if(useDB && currentUser){
-    try{
-      if(val) await dbUpsert('completions', {user_id: currentUser.id, completion_key:key, week_key:wk}, 'user_id,completion_key,week_key');
-      else await dbDelete('completions', `user_id=eq.${currentUser.id}&completion_key=eq.${key}&week_key=eq.${wk}`);
-      return;
-    }catch(e){ console.error('saveComp error:', e); showToast('Chưa lưu được trạng thái'); }
-  }
-}
 
 // ── Week helpers ──
 function getWeekStart(off=0){
@@ -1031,6 +824,89 @@ function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(3
 function timeDiff(s,e){
   const [sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
   let d=(eh*60+em)-(sh*60+sm); if(d<0)d+=1440; return d;
+}
+
+// ── Supabase REST API (direct fetch, no JS library needed) ──
+const DB_URL = SUPABASE_URL + '/rest/v1';
+const DB_HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Prefer': 'return=minimal'
+};
+
+async function dbGet(table, params=''){
+  const r = await fetch(`${DB_URL}/${table}?${params}`, {headers: DB_HEADERS});
+  if(!r.ok) throw new Error(`GET ${table} failed: ${r.status}`);
+  return r.json();
+}
+async function dbInsert(table, data){
+  const r = await fetch(`${DB_URL}/${table}`, {
+    method:'POST', headers:{...DB_HEADERS, 'Prefer':'return=minimal'},
+    body: JSON.stringify(Array.isArray(data)?data:[data])
+  });
+  if(!r.ok) throw new Error(`INSERT ${table} failed: ${r.status}`);
+}
+async function dbUpsert(table, data, onConflict){
+  const r = await fetch(`${DB_URL}/${table}?on_conflict=${onConflict}`, {
+    method:'POST', headers:{...DB_HEADERS, 'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body: JSON.stringify(Array.isArray(data)?data:[data])
+  });
+  if(!r.ok) throw new Error(`UPSERT ${table} failed: ${r.status}`);
+}
+async function dbDelete(table, params){
+  const r = await fetch(`${DB_URL}/${table}?${params}`, {
+    method:'DELETE', headers: DB_HEADERS
+  });
+  if(!r.ok) throw new Error(`DELETE ${table} failed: ${r.status}`);
+}
+
+async function initDB(){
+  if(SUPABASE_URL==='YOUR_SUPABASE_URL' || SUPABASE_KEY==='YOUR_SUPABASE_ANON_KEY') return false;
+  try{
+    await dbGet('schedule_rows', 'select=id&limit=1');
+    useDB = true;
+    console.log('✅ Supabase connected!');
+    return true;
+  }catch(e){ console.error('Supabase error:', e); return false; }
+}
+
+async function loadData(){
+  if(useDB){
+    try{
+      const r = await dbGet('schedule_rows', 'select=*&order=start.asc');
+      rows = r.map(x=>({...x, tasks: typeof x.tasks==='string'?JSON.parse(x.tasks):x.tasks}));
+      const wk = getWeekKey(weekOffset);
+      const c = await dbGet('completions', `select=*&week_key=eq.${wk}`);
+      done = {}; c.forEach(x=>{ done[x.completion_key]=true; }); return;
+    }catch(e){ console.error('loadData error:', e); }
+  }
+  const r=localStorage.getItem('rows_v3'); if(r) rows=JSON.parse(r);
+  const c=localStorage.getItem('done_'+getWeekKey(weekOffset)); done=c?JSON.parse(c):{};
+}
+
+async function saveRowsDB(){
+  if(useDB){
+    try{
+      await dbDelete('schedule_rows', 'id=neq.00000000');
+      if(rows.length) await dbInsert('schedule_rows', rows.map(r=>({...r, tasks:JSON.stringify(r.tasks||{})})));
+      return;
+    }catch(e){ console.error('saveRows error:', e); }
+  }
+  localStorage.setItem('rows_v3', JSON.stringify(rows));
+}
+
+async function saveComp(key, val){
+  const wk = getWeekKey(weekOffset);
+  if(useDB){
+    try{
+      if(val) await dbUpsert('completions', {completion_key:key, week_key:wk}, 'completion_key,week_key');
+      else await dbDelete('completions', `completion_key=eq.${key}&week_key=eq.${wk}`);
+      return;
+    }catch(e){ console.error('saveComp error:', e); }
+  }
+  if(val) done[key]=true; else delete done[key];
+  localStorage.setItem('done_'+wk, JSON.stringify(done));
 }
 
 // ── UI helpers ──
@@ -1199,8 +1075,8 @@ async function resetWeek(){
   // Chỉ xoá trạng thái done, KHÔNG xoá lịch
   if(useDB){
     try{
-      await dbDelete('completions', `user_id=eq.${currentUser.id}&week_key=eq.${wk}`);
-      await dbDelete('chore_completions', `user_id=eq.${currentUser.id}&week_key=eq.${wk}`);
+      await dbDelete('completions', `week_key=eq.${wk}`);
+      await dbDelete('chore_completions', `week_key=eq.${wk}`);
     }catch(e){}
   }
   done={};
@@ -1427,20 +1303,21 @@ let rewards = []; // [{id, subject, pct, reward}]
 async function loadRewards(){
   if(useDB){
     try{
-      const data = await dbGet('app_settings', `select=value&user_id=eq.${currentUser.id}&key=eq.rewards`);
+      const data = await dbGet('app_settings', `select=value&key=eq.rewards`);
       if(data && data[0]) rewards=JSON.parse(data[0].value); return;
     }catch(e){}
   }
-  rewards = [];
+  const r=localStorage.getItem('rewards_v1');
+  if(r) rewards=JSON.parse(r);
 }
 async function saveRewards(){
   if(useDB){
     try{
-      await dbUpsert('app_settings', {user_id: currentUser.id, key:'rewards', value:JSON.stringify(rewards)}, 'user_id,key');
+      await dbUpsert('app_settings', {key:'rewards', value:JSON.stringify(rewards)}, 'key');
       return;
     }catch(e){ console.error('saveRewards error:',e); }
   }
-  // Không lưu rewards vào localStorage để tránh mất đồng bộ.
+  localStorage.setItem('rewards_v1',JSON.stringify(rewards));
 }
 
 // ── Icon picker ──
@@ -1612,35 +1489,37 @@ let choreCheckedDays = new Set([0,1,2,3,4,5,6]);
 async function loadChores(){
   if(useDB){
     try{
-      const cd = await dbGet('app_settings', `select=value&user_id=eq.${currentUser.id}&key=eq.chores`);
+      const cd = await dbGet('app_settings', 'select=value&key=eq.chores');
       if(cd && cd[0]) chores=JSON.parse(cd[0].value);
       const wk=getWeekKey(weekOffset);
-      const dd = await dbGet('chore_completions', `select=*&user_id=eq.${currentUser.id}&week_key=eq.${wk}`);
+      const dd = await dbGet('chore_completions', `select=*&week_key=eq.${wk}`);
       choreDone={}; dd.forEach(x=>{ choreDone[x.completion_key]=true; }); return;
     }catch(e){ console.error('loadChores error:',e); }
   }
-  chores = []; choreDone = {};
+  const c = localStorage.getItem('chores_v1'); if(c) chores = JSON.parse(c);
+  const wk = getWeekKey(weekOffset);
+  const d = localStorage.getItem('choreDone_'+wk); choreDone = d ? JSON.parse(d) : {};
 }
 async function saveChores(){
   if(useDB){
     try{
-      await dbUpsert('app_settings', {user_id: currentUser.id, key:'chores', value:JSON.stringify(chores)}, 'user_id,key');
+      await dbUpsert('app_settings', {key:'chores', value:JSON.stringify(chores)}, 'key');
       return;
     }catch(e){ console.error('saveChores error:',e); }
   }
-  // Không lưu chores vào localStorage để tránh mất đồng bộ.
+  localStorage.setItem('chores_v1', JSON.stringify(chores));
 }
 async function saveChoreDone(key, val){
   const wk = getWeekKey(weekOffset);
   if(useDB){
     try{
-      if(val) await dbUpsert('chore_completions', {user_id: currentUser.id, completion_key:key, week_key:wk}, 'user_id,completion_key,week_key');
-      else await dbDelete('chore_completions', `user_id=eq.${currentUser.id}&completion_key=eq.${key}&week_key=eq.${wk}`);
+      if(val) await dbUpsert('chore_completions', {completion_key:key, week_key:wk}, 'completion_key,week_key');
+      else await dbDelete('chore_completions', `completion_key=eq.${key}&week_key=eq.${wk}`);
       return;
     }catch(e){ console.error('saveChoreDone error:',e); }
   }
   if(val) choreDone[key]=true; else delete choreDone[key];
-  // Không lưu choreDone vào localStorage để tránh mất đồng bộ.
+  localStorage.setItem('choreDone_'+wk, JSON.stringify(choreDone));
 }
 
 function openChoreModal(id=null){
@@ -1777,6 +1656,50 @@ function renderChoreTable(){
   });
 }
 
+
+// ── PWA INSTALL / OFFLINE CACHE ──
+let deferredInstallPrompt = null;
+
+function isIosDevice(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isStandaloneMode(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+async function registerPWA(){
+  if('serviceWorker' in navigator){
+    try{
+      await navigator.serviceWorker.register('/sw.js');
+      console.log('✅ PWA service worker registered');
+    }catch(e){ console.warn('Service worker register failed:', e); }
+  }
+  if(isIosDevice() && !isStandaloneMode()){
+    document.getElementById('install-pwa-btn')?.classList.remove('hidden');
+  }
+}
+
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('install-pwa-btn')?.classList.remove('hidden');
+});
+
+async function installPWA(){
+  if(isIosDevice() && !deferredInstallPrompt){
+    document.getElementById('pwa-tip')?.classList.add('show');
+    return;
+  }
+  if(!deferredInstallPrompt){
+    showToast('Nếu không thấy nút cài, hãy mở bằng Chrome/Safari rồi Add to Home Screen.');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('install-pwa-btn')?.classList.add('hidden');
+}
+
 // ── NOTIFICATIONS ──
 let notifTimers = [];
 
@@ -1885,11 +1808,18 @@ function showToast(msg){
 
 // ── Init ──
 async function init(){
-  setAppVisible(false);
-  if(accessToken){
-    const u = await getCurrentUser();
-    if(u) await startAppAfterLogin();
-  }
+  await registerPWA();
+  await initDB();
+  updateWeekLabel();
+  await loadData();
+  await loadRewards();
+  await loadChores();
+  renderTable();
+  renderStats();
+  renderRewards();
+  renderChoreTable();
+  checkNotifSupport();
+  if(Notification.permission === 'granted') scheduleNotifications();
 }
 init();
 </script>
