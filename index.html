@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bảng theo dõi và khen thưởng bé Bút Bi ⭐</title>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root {
   --sky: #87CEEB;
@@ -799,8 +799,17 @@ function timeDiff(s,e){
 // ── Supabase ──
 async function initDB(){
   if(SUPABASE_URL==='YOUR_SUPABASE_URL' || SUPABASE_KEY==='YOUR_SUPABASE_ANON_KEY') return false;
-  try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); useDB=true; return true; }
-  catch(e){ return false; }
+  try{
+    sb=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false }
+    });
+    // Test connection
+    const {error} = await sb.from('schedule_rows').select('id').limit(1);
+    if(error){ console.error('Supabase test failed:', error); return false; }
+    useDB=true;
+    console.log('✅ Supabase connected!');
+    return true;
+  }catch(e){ console.error('Supabase init error:', e); return false; }
 }
 
 async function loadData(){
@@ -1002,18 +1011,34 @@ async function deleteRow(id){
 }
 
 async function resetWeek(){
-  if(!confirm('Reset hoàn thành tuần này?')) return;
+  if(!confirm('Reset trạng thái hoàn thành tuần này?\n(Lịch và công việc vẫn được giữ nguyên)')) return;
   const wk=getWeekKey(weekOffset);
-  if(useDB){ try{ await sb.from('completions').delete().eq('week_key',wk); }catch(e){} }
-  done={}; localStorage.removeItem('done_'+wk);
-  renderTable(); renderStats(); showToast('Đã reset!');
+  // Chỉ xoá trạng thái done, KHÔNG xoá lịch
+  if(useDB){
+    try{
+      await sb.from('completions').delete().eq('week_key',wk);
+      await sb.from('chore_completions').delete().eq('week_key',wk);
+    }catch(e){}
+  }
+  done={};
+  choreDone={};
+  localStorage.removeItem('done_'+wk);
+  localStorage.removeItem('choreDone_'+wk);
+  renderTable(); renderChoreTable(); renderStats(); renderRewards();
+  showToast('Đã reset trạng thái tuần này!');
 }
 
 async function clearAll(){
-  if(!confirm('Xoá toàn bộ dữ liệu?')) return;
-  rows=[]; done=[];
-  await saveRowsDB(); localStorage.clear();
-  renderTable(); renderStats(); showToast('Đã xoá tất cả!');
+  if(!confirm('⚠️ Xoá TOÀN BỘ lịch và công việc?\nTrạng thái hoàn thành vẫn được giữ.')) return;
+  rows=[]; chores=[]; rewards=[];
+  await saveRowsDB();
+  await saveChores();
+  await saveRewards();
+  localStorage.removeItem('rows_v3');
+  localStorage.removeItem('chores_v1');
+  localStorage.removeItem('rewards_v1');
+  renderTable(); renderChoreTable(); renderStats(); renderRewards();
+  showToast('Đã xoá toàn bộ lịch!');
 }
 
 function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(async()=>{ await loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
