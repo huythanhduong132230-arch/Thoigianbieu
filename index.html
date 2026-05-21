@@ -558,12 +558,11 @@ footer {
 
 </style>
 
-<link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#3AA7A3">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Thời gian biểu">
-<link rel="apple-touch-icon" href="/icon-192.png">
+
+
+
+
+
 
 </head>
 <body>
@@ -813,7 +812,7 @@ footer {
 <script>
 // ── CONFIG ──
 const SUPABASE_URL = 'https://etilbevkhbissxlwspxr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_zOnqPCaQAmv8OQXlaZQP1Q_gYdiIBg9';
+const SUPABASE_KEY = 'sb_publishable_MtRy2v-lrvuZIx6G6nup9Q_SOFHZoM6';
 // ────────────
 
 const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ Nhật'];
@@ -1902,13 +1901,7 @@ async function init(){
 init();
 </script>
 
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}
-</script>
+
 
 
 <script>
@@ -2085,69 +2078,6 @@ if ('serviceWorker' in navigator) {
 
 
 <script>
-/* ===== PWA strong Supabase sync refresh fix v4 ===== */
-(function () {
-  let lastSyncAt = 0;
-  let isSyncing = false;
-
-  async function callMaybe(name) {
-    try {
-      if (typeof window[name] === 'function') {
-        const result = window[name]();
-        if (result && typeof result.then === 'function') await result;
-        return true;
-      }
-    } catch (e) {
-      console.warn('Sync function failed:', name, e);
-    }
-    return false;
-  }
-
-  async function forceRefreshFromSupabase(reason = 'manual') {
-    if (isSyncing) return;
-    const now = Date.now();
-    if (now - lastSyncAt < 1500) return;
-    lastSyncAt = now;
-    isSyncing = true;
-
-    try {
-      await callMaybe('loadData');
-      await callMaybe('loadChores');
-      await callMaybe('loadRewards');
-
-      await callMaybe('renderTable');
-      await callMaybe('renderChoreTable');
-      await callMaybe('renderStats');
-      await callMaybe('renderRewards');
-      await callMaybe('updateWeekLabel');
-
-      window.__lastButbiSyncReason = reason;
-      window.__lastButbiSyncAt = new Date().toISOString();
-      console.log('✅ PWA synced from Supabase:', reason);
-    } finally {
-      isSyncing = false;
-    }
-  }
-
-  window.forceRefreshFromSupabase = forceRefreshFromSupabase;
-
-  window.addEventListener('focus', () => forceRefreshFromSupabase('focus'));
-  window.addEventListener('pageshow', () => forceRefreshFromSupabase('pageshow'));
-  window.addEventListener('online', () => forceRefreshFromSupabase('online'));
-
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) setTimeout(() => forceRefreshFromSupabase('visibilitychange'), 400);
-  });
-
-  setInterval(() => {
-    if (!document.hidden) forceRefreshFromSupabase('interval');
-  }, 30000);
-
-  window.addEventListener('load', () => {
-    setTimeout(() => forceRefreshFromSupabase('initial-load-1'), 1200);
-    setTimeout(() => forceRefreshFromSupabase('initial-load-2'), 4000);
-  });
-})();
 </script>
 
 </body>
