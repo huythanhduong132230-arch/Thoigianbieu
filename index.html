@@ -813,7 +813,7 @@ footer {
 <script>
 // ── CONFIG ──
 const SUPABASE_URL = 'https://etilbevkhbissxlwspxr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_zOnqPCaQAmv8OQXlaZQP1Q_gYdiIBg9';
+const SUPABASE_KEY = 'sb_publishable_MtRy2v-lrvuZIx6G6nup9Q_SOFHZoM6';
 // ────────────
 
 const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ Nhật'];
@@ -1908,6 +1908,246 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+</script>
+
+
+<script>
+(function () {
+  const REMINDER_LEAD_MINUTES = 5;
+  const CHECK_INTERVAL_MS = 30000;
+  const REMINDER_KEY_PREFIX = 'butbi_reminder_sent_';
+
+  function normalizeText(s) {
+    return String(s || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function parseTimeRange(text) {
+    const match = normalizeText(text).match(/(\d{1,2})[:h](\d{2})\s*[-–—]\s*(\d{1,2})[:h](\d{2})/);
+    if (!match) return null;
+    return { h: Number(match[1]), m: Number(match[2]) };
+  }
+
+  function getVietnameseDayIndex(date) {
+    const jsDay = date.getDay();
+    if (jsDay === 0) return 6;
+    return jsDay - 1;
+  }
+
+  function extractScheduleItemsFromPage() {
+    const items = [];
+    const today = new Date();
+    const todayColumnIndex = getVietnameseDayIndex(today) + 1;
+    const rows = Array.from(document.querySelectorAll('tr'));
+
+    rows.forEach(row => {
+      const cells = Array.from(row.children);
+      if (cells.length < 2) return;
+
+      const timeText = normalizeText(cells[0].innerText || cells[0].textContent || '');
+      const time = parseTimeRange(timeText);
+      if (!time) return;
+
+      const todayCell = cells[todayColumnIndex];
+      if (!todayCell) return;
+
+      let title = normalizeText(todayCell.innerText || todayCell.textContent || '');
+      title = title.replace(/▶\s*Đang học/gi, '').replace(/Đang học/gi, '').trim();
+
+      if (!title) return;
+
+      const start = new Date();
+      start.setHours(time.h, time.m, 0, 0);
+      items.push({ title, start, timeText });
+    });
+
+    return items;
+  }
+
+  async function registerSW() {
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+      return await navigator.serviceWorker.register('/sw.js');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function showReminderNotification(title, body) {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const options = {
+      body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: 'butbi-study-reminder',
+      renotify: true
+    };
+
+    if (reg && reg.showNotification) return reg.showNotification(title, options);
+    if ('Notification' in window && Notification.permission === 'granted') return new Notification(title, options);
+  }
+
+  async function requestReminderPermission() {
+    if (!('Notification' in window)) {
+      alert('Thiết bị/trình duyệt này chưa hỗ trợ thông báo web.');
+      return false;
+    }
+
+    let permission = Notification.permission;
+    if (permission === 'default') permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      alert('Bạn cần cho phép thông báo để app nhắc trước giờ học.');
+      return false;
+    }
+
+    localStorage.setItem('butbi_notifications_enabled', '1');
+    await registerSW();
+    await showReminderNotification('Đã bật nhắc học', 'App sẽ nhắc trước giờ học 5 phút khi có lịch hôm nay.');
+    alert('Đã bật nhắc học trước 5 phút.');
+    return true;
+  }
+
+  function reminderAlreadySent(key) {
+    return localStorage.getItem(REMINDER_KEY_PREFIX + key) === '1';
+  }
+
+  function markReminderSent(key) {
+    localStorage.setItem(REMINDER_KEY_PREFIX + key, '1');
+  }
+
+  async function checkStudyReminders() {
+    if (localStorage.getItem('butbi_notifications_enabled') !== '1') return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const now = new Date();
+    const items = extractScheduleItemsFromPage();
+
+    for (const item of items) {
+      const diffMin = (item.start.getTime() - now.getTime()) / 60000;
+      if (diffMin <= REMINDER_LEAD_MINUTES && diffMin > REMINDER_LEAD_MINUTES - 1) {
+        const dateKey = now.toISOString().slice(0, 10);
+        const reminderKey = `${dateKey}_${item.timeText}_${item.title}`;
+        if (reminderAlreadySent(reminderKey)) continue;
+        markReminderSent(reminderKey);
+        await showReminderNotification('Sắp tới giờ học rồi', `5 phút nữa học: ${item.title} (${item.timeText})`);
+      }
+    }
+  }
+
+  function injectReminderButton() {
+    if (document.getElementById('butbi-enable-notifications')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'butbi-enable-notifications';
+    btn.type = 'button';
+    btn.textContent = localStorage.getItem('butbi_notifications_enabled') === '1'
+      ? '🔔 Đã bật nhắc học'
+      : '🔔 Bật nhắc trước 5 phút';
+
+    btn.style.cssText = [
+      'position:fixed',
+      'right:14px',
+      'bottom:14px',
+      'z-index:99999',
+      'border:none',
+      'border-radius:999px',
+      'padding:12px 16px',
+      'background:#ffffff',
+      'color:#1f6f8b',
+      'font-weight:800',
+      'box-shadow:0 10px 30px rgba(0,0,0,.18)',
+      'border:2px solid rgba(31,111,139,.18)'
+    ].join(';');
+
+    btn.addEventListener('click', async () => {
+      const ok = await requestReminderPermission();
+      if (ok) btn.textContent = '🔔 Đã bật nhắc học';
+    });
+
+    document.body.appendChild(btn);
+  }
+
+  window.addEventListener('load', async () => {
+    await registerSW();
+    injectReminderButton();
+    setInterval(checkStudyReminders, CHECK_INTERVAL_MS);
+    setTimeout(checkStudyReminders, 2500);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) setTimeout(checkStudyReminders, 1000);
+  });
+})();
+</script>
+
+
+
+
+
+<script>
+/* ===== PWA strong Supabase sync refresh fix v4 ===== */
+(function () {
+  let lastSyncAt = 0;
+  let isSyncing = false;
+
+  async function callMaybe(name) {
+    try {
+      if (typeof window[name] === 'function') {
+        const result = window[name]();
+        if (result && typeof result.then === 'function') await result;
+        return true;
+      }
+    } catch (e) {
+      console.warn('Sync function failed:', name, e);
+    }
+    return false;
+  }
+
+  async function forceRefreshFromSupabase(reason = 'manual') {
+    if (isSyncing) return;
+    const now = Date.now();
+    if (now - lastSyncAt < 1500) return;
+    lastSyncAt = now;
+    isSyncing = true;
+
+    try {
+      await callMaybe('loadData');
+      await callMaybe('loadChores');
+      await callMaybe('loadRewards');
+
+      await callMaybe('renderTable');
+      await callMaybe('renderChoreTable');
+      await callMaybe('renderStats');
+      await callMaybe('renderRewards');
+      await callMaybe('updateWeekLabel');
+
+      window.__lastButbiSyncReason = reason;
+      window.__lastButbiSyncAt = new Date().toISOString();
+      console.log('✅ PWA synced from Supabase:', reason);
+    } finally {
+      isSyncing = false;
+    }
+  }
+
+  window.forceRefreshFromSupabase = forceRefreshFromSupabase;
+
+  window.addEventListener('focus', () => forceRefreshFromSupabase('focus'));
+  window.addEventListener('pageshow', () => forceRefreshFromSupabase('pageshow'));
+  window.addEventListener('online', () => forceRefreshFromSupabase('online'));
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) setTimeout(() => forceRefreshFromSupabase('visibilitychange'), 400);
+  });
+
+  setInterval(() => {
+    if (!document.hidden) forceRefreshFromSupabase('interval');
+  }, 30000);
+
+  window.addEventListener('load', () => {
+    setTimeout(() => forceRefreshFromSupabase('initial-load-1'), 1200);
+    setTimeout(() => forceRefreshFromSupabase('initial-load-2'), 4000);
+  });
+})();
 </script>
 
 </body>
