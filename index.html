@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Thời Gian Biểu Của Con ⭐</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --primary: #6C63FF;
+    --primary-light: #EEF0FF;
+    --accent: #FF6B6B;
+    --green: #43D19E;
+    --yellow: #FFD166;
+    --sky: #4CC9F0;
+    --bg: #F5F7FF;
+    --card: #FFFFFF;
+    --border: #E2E8FF;
+    --text: #2D3152;
+    --muted: #8B92B8;
+    --done-overlay: rgba(67,209,158,0.18);
+    --shadow: 0 4px 24px rgba(108,99,255,0.10);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    background: linear-gradient(135deg, #6C63FF 0%, #4CC9F0 100%);
+    padding: 18px 24px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(108,99,255,0.25);
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  header h1 span { font-size: 1.6rem; }
+  .month-badge {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border-radius: 20px;
+    padding: 4px 14px;
+    backdrop-filter: blur(8px);
+  }
+
+  /* ─── SETUP BANNER ─── */
+  #setup-banner {
+    background: #FFF3CD;
+    border-left: 4px solid #FFD166;
+    margin: 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: #7a5c00;
+    display: none;
+  }
+  #setup-banner a { color: var(--primary); font-weight: 700; }
+
+  /* ─── CONTROLS ─── */
+  .controls {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px 0;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: none;
+    transition: all .18s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 3px 12px rgba(108,99,255,0.30); }
+  .btn-primary:hover { background: #574fd6; transform: translateY(-1px); }
+  .btn-danger  { background: var(--accent); color: #fff; box-shadow: 0 3px 12px rgba(255,107,107,0.30); }
+  .btn-danger:hover { background: #e05555; }
+  .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary-light); }
+  .btn-sm { padding: 5px 13px; font-size: 0.78rem; }
+
+  /* ─── WEEK NAV ─── */
+  .week-nav {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px 0;
+  }
+  .week-nav button {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: 50%; width: 34px; height: 34px;
+    cursor: pointer; font-size: 1rem; color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .week-nav button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .week-label {
+    font-weight: 800; font-size: 1rem; color: var(--text);
+  }
+  .week-label span { color: var(--primary); }
+
+  /* ─── TABLE WRAPPER ─── */
+  .table-wrapper {
+    overflow-x: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-width: 780px;
+  }
+  th {
+    background: linear-gradient(135deg, #6C63FF, #4CC9F0);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.82rem;
+    padding: 10px 6px;
+    text-align: center;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  th:first-child { width: 90px; }
+  th .day-date { display: block; font-weight: 600; font-size: 0.7rem; opacity: 0.85; margin-top: 2px; }
+  td {
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 0;
+    vertical-align: top;
+    position: relative;
+  }
+  td:last-child { border-right: none; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Time column */
+  .time-col {
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+    background: #F8F9FF;
+  }
+  .time-col .time-range {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+  .time-col .duration {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ─── TASK CELL ─── */
+  .task-cell {
+    min-height: 52px;
+    cursor: pointer;
+    position: relative;
+    transition: all .15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    gap: 3px;
+  }
+  .task-cell:hover { filter: brightness(0.94); }
+  .task-cell .task-name {
+    font-size: 0.73rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-word;
+    color: inherit;
+  }
+  .task-cell .done-badge {
+    display: none;
+    background: rgba(255,255,255,0.8);
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #27ae60;
+    padding: 2px 7px;
+    letter-spacing: 0.5px;
+  }
+  .task-cell.done .done-badge { display: block; }
+  .task-cell.done::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--done-overlay);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .task-cell.done .task-name { opacity: 0.7; text-decoration: line-through; }
+
+  /* Merged / span rows */
+  .merged-cell {
+    text-align: center;
+    vertical-align: middle;
+    background: #F0F4FF;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary);
+    padding: 8px 6px;
+    letter-spacing: 0.2px;
+  }
+
+  /* Empty cell */
+  .empty-cell {
+    min-height: 52px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+  }
+  .empty-cell:hover { background: var(--primary-light); }
+  .empty-cell .add-icon {
+    opacity: 0;
+    font-size: 1.1rem;
+    transition: opacity .15s;
+    color: var(--primary);
+  }
+  .empty-cell:hover .add-icon { opacity: 0.5; }
+
+  /* ─── ADD ROW button row ─── */
+  .add-row-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: background .15s;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .add-row-btn:hover { background: var(--primary-light); }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(45,49,82,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px 26px;
+    width: 92%; max-width: 440px;
+    box-shadow: 0 20px 60px rgba(108,99,255,0.20);
+    animation: modalIn .22s ease;
+  }
+  @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal h2 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.2rem; font-weight: 800;
+    color: var(--primary); margin-bottom: 18px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1/-1; }
+  .form-group label { font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+    background: var(--bg);
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--primary); background: #fff; }
+  .duration-display {
+    background: var(--primary-light);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+  }
+  .day-checkboxes {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .day-checkboxes label {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    transition: all .15s;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+  }
+  .day-checkboxes input[type=checkbox] { display: none; }
+  .day-checkboxes label.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .color-swatches { display: flex; gap: 7px; flex-wrap: wrap; }
+  .swatch {
+    width: 28px; height: 28px; border-radius: 50%;
+    cursor: pointer; border: 3px solid transparent;
+    transition: all .15s; flex-shrink: 0;
+  }
+  .swatch.selected { border-color: var(--text); transform: scale(1.15); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+
+  /* Row edit controls */
+  .row-controls {
+    display: flex; gap: 4px;
+    position: absolute; top: 3px; right: 3px;
+    opacity: 0; transition: opacity .15s;
+  }
+  tr:hover .row-controls { opacity: 1; }
+  .row-ctrl-btn {
+    background: rgba(255,255,255,0.85);
+    border: none; border-radius: 50%;
+    width: 20px; height: 20px;
+    cursor: pointer; font-size: 0.65rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+    color: var(--text);
+  }
+  .row-ctrl-btn:hover { background: var(--accent); color: #fff; }
+
+  /* ─── STATS ─── */
+  .stats-section {
+    padding: 16px;
+  }
+  .stats-section h2 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.1rem; font-weight: 800;
+    color: var(--text); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 6px;
+    border-left: 4px solid var(--primary);
+  }
+  .stat-card .stat-subject {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .stat-card .stat-nums {
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .stat-card .stat-done {
+    font-size: 1.4rem; font-weight: 900;
+    color: var(--green);
+  }
+  .stat-card .stat-total {
+    font-size: 0.85rem; font-weight: 600; color: var(--muted);
+  }
+  .stat-bar {
+    height: 6px; border-radius: 3px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .stat-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+  /* ─── LOADING ─── */
+  #loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+    font-weight: 700; color: var(--muted);
+    gap: 10px;
+  }
+  .spinner {
+    width: 22px; height: 22px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: #fff;
+    padding: 10px 22px; border-radius: 30px;
+    font-weight: 700; font-size: 0.85rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+    z-index: 9999;
+  }
+  #toast.show { opacity: 1; }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>⭐</span> Thời Gian Biểu Của Con</h1>
+  <div class="month-badge" id="month-badge">Tháng 5/2025</div>
+</header>
+
+<div id="setup-banner">
+  ⚠️ Chưa kết nối Supabase. Dữ liệu đang lưu <strong>local</strong>. Hãy mở file <code>config.js</code> và điền <code>SUPABASE_URL</code> + <code>SUPABASE_KEY</code>. 
+  Xem hướng dẫn trong file <code>README.md</code>.
+</div>
+
+<div class="controls">
+  <button class="btn btn-primary" onclick="openAddRowModal()">＋ Thêm khung giờ</button>
+  <button class="btn btn-outline" onclick="resetWeekDone()">🔄 Reset tuần này</button>
+  <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 Xoá tất cả</button>
+</div>
+
+<div class="week-nav">
+  <button onclick="changeWeek(-1)">‹</button>
+  <div class="week-label">Tuần: <span id="week-label-text"></span></div>
+  <button onclick="changeWeek(1)">›</button>
+  <button class="btn btn-outline btn-sm" onclick="goToday()" style="margin-left:8px">Hôm nay</button>
+</div>
+
+<div class="table-wrapper">
+  <div id="loading"><div class="spinner"></div> Đang tải...</div>
+  <table id="schedule-table" style="display:none">
+    <thead>
+      <tr id="header-row"></tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+  <button class="add-row-btn" onclick="openAddRowModal()">＋ Thêm khung giờ mới</button>
+</div>
+
+<div class="stats-section">
+  <h2>📊 Thống kê tuần này</h2>
+  <div class="stats-grid" id="stats-grid"></div>
+</div>
+
+<footer>Made with ❤️ for con yêu • Dữ liệu lưu trên Supabase</footer>
+
+<!-- MODAL: Add/Edit row -->
+<div class="modal-overlay" id="row-modal">
+  <div class="modal">
+    <h2 id="modal-title">＋ Thêm khung giờ</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Giờ bắt đầu</label>
+        <input type="time" id="f-start" oninput="calcDuration()"/>
+      </div>
+      <div class="form-group">
+        <label>Giờ kết thúc</label>
+        <input type="time" id="f-end" oninput="calcDuration()"/>
+      </div>
+      <div class="form-group full">
+        <label>Thời lượng tự động</label>
+        <div class="duration-display" id="f-duration">– phút</div>
+      </div>
+      <div class="form-group full">
+        <label>Nhiệm vụ mặc định (áp dụng cho các ngày chọn)</label>
+        <input type="text" id="f-task" placeholder="Ví dụ: Toán, Tiếng Anh, Game..."/>
+      </div>
+      <div class="form-group full">
+        <label>Áp dụng cho ngày</label>
+        <div class="day-checkboxes" id="day-checkboxes"></div>
+      </div>
+      <div class="form-group full">
+        <label>Màu nhiệm vụ</label>
+        <div class="color-swatches" id="color-swatches"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveRow()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit single cell -->
+<div class="modal-overlay" id="cell-modal">
+  <div class="modal">
+    <h2 id="cell-modal-title">✏️ Sửa ô nhiệm vụ</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Tên nhiệm vụ</label>
+        <input type="text" id="cf-task" placeholder="Nhập nhiệm vụ..."/>
+      </div>
+      <div class="form-group full">
+        <label>Màu nhiệm vụ</label>
+        <div class="color-swatches" id="cell-color-swatches"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCellModal()">Huỷ</button>
+      <button class="btn btn-danger btn-sm" onclick="clearCell()">Xoá nhiệm vụ</button>
+      <button class="btn btn-primary" onclick="saveCellEdit()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── CONFIG: Thay SUPABASE_URL và SUPABASE_KEY của bạn vào đây ───
+const SUPABASE_URL = 'https://etilbevkhbissxlwspxr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_zOnqPCaQAmv8OQXlaZQP1Q_gYdiIBg9';
+// ─────────────────────────────────────────────────────────────────
+
+const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ Nhật'];
+const DAY_SHORT = ['T2','T3','T4','T5','T6','T7','CN'];
+
+const TASK_COLORS = [
+  '#FFD6D6','#FFE8B5','#D6F5D6','#D6ECFF','#E8D6FF','#FFD6F0',
+  '#B5F0E8','#F0E8B5','#D6D6FF','#FFD6B5','#B5F5D6','#F5D6B5',
+  '#C8E6C9','#B3E5FC','#F8BBD0','#FFF9C4',
+];
+
+let supabase_client = null;
+let useSupabase = false;
+
+let scheduleRows = []; // [{id, start, end, tasks: {0:'Math',1:'',..6:''}}, ...]
+let completions = {};  // key: "weekKey_rowId_dayIdx" => true
+let currentWeekOffset = 0;
+let editingRowId = null;
+let editingCellRowId = null, editingCellDay = null;
+let selectedColor = TASK_COLORS[0];
+let selectedCellColor = TASK_COLORS[0];
+let checkedDays = new Set([0,1,2,3,4,5,6]);
+
+// ─── Week helpers ───
+function getWeekStart(offset = 0) {
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+function getWeekKey(offset = 0) {
+  const d = getWeekStart(offset);
+  return `${d.getFullYear()}-W${String(Math.ceil(d.getDate()/7)).padStart(2,'0')}-${d.getMonth()}`;
+}
+function formatDate(d) {
+  return `${d.getDate()}/${d.getMonth()+1}`;
+}
+function addDays(d, n) {
+  const r = new Date(d); r.setDate(r.getDate()+n); return r;
+}
+
+// ─── Supabase init ───
+async function initSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    document.getElementById('setup-banner').style.display = 'block';
+    return false;
+  }
+  try {
+    supabase_client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    useSupabase = true;
+    return true;
+  } catch(e) {
+    console.warn('Supabase init failed', e);
+    document.getElementById('setup-banner').style.display = 'block';
+    return false;
+  }
+}
+
+// ─── Data persistence ───
+async function loadData() {
+  if (useSupabase) {
+    try {
+      const {data: rows} = await supabase_client.from('schedule_rows').select('*').order('start');
+      if (rows) scheduleRows = rows.map(r => ({...r, tasks: typeof r.tasks === 'string' ? JSON.parse(r.tasks) : r.tasks}));
+      const weekKey = getWeekKey(currentWeekOffset);
+      const {data: comps} = await supabase_client.from('completions').select('*').eq('week_key', weekKey);
+      completions = {};
+      if (comps) comps.forEach(c => { completions[c.completion_key] = true; });
+      return;
+    } catch(e) { console.warn('Supabase load error', e); }
+  }
+  // Fallback to localStorage
+  const r = localStorage.getItem('schedule_rows_v2');
+  if (r) scheduleRows = JSON.parse(r);
+  const weekKey = getWeekKey(currentWeekOffset);
+  const c = localStorage.getItem('completions_' + weekKey);
+  if (c) completions = JSON.parse(c);
+  else completions = {};
+}
+
+async function saveRows() {
+  if (useSupabase) {
+    try {
+      await supabase_client.from('schedule_rows').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (scheduleRows.length > 0) {
+        const rows = scheduleRows.map(r => ({...r, tasks: JSON.stringify(r.tasks)}));
+        await supabase_client.from('schedule_rows').insert(rows);
+      }
+      return;
+    } catch(e) { console.warn('Supabase saveRows error', e); }
+  }
+  localStorage.setItem('schedule_rows_v2', JSON.stringify(scheduleRows));
+}
+
+async function saveCompletion(key, val) {
+  if (useSupabase) {
+    const weekKey = getWeekKey(currentWeekOffset);
+    try {
+      if (val) {
+        await supabase_client.from('completions').upsert({completion_key: key, week_key: weekKey}, {onConflict: 'completion_key,week_key'});
+      } else {
+        await supabase_client.from('completions').delete().eq('completion_key', key).eq('week_key', weekKey);
+      }
+      return;
+    } catch(e) { console.warn('Supabase saveCompletion error', e); }
+  }
+  const weekKey = getWeekKey(currentWeekOffset);
+  const storageKey = 'completions_' + weekKey;
+  if (val) completions[key] = true;
+  else delete completions[key];
+  localStorage.setItem(storageKey, JSON.stringify(completions));
+}
+
+// ─── UUID ───
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+// ─── Duration calc ───
+function calcDuration() {
+  const s = document.getElementById('f-start').value;
+  const e = document.getElementById('f-end').value;
+  if (!s || !e) { document.getElementById('f-duration').textContent = '– phút'; return; }
+  const [sh,sm] = s.split(':').map(Number);
+  const [eh,em] = e.split(':').map(Number);
+  let diff = (eh*60+em) - (sh*60+sm);
+  if (diff < 0) diff += 24*60;
+  document.getElementById('f-duration').textContent = diff + ' phút';
+}
+
+// ─── Color swatch render ───
+function renderSwatches(containerId, selectedRef, onSelect) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  TASK_COLORS.forEach(color => {
+    const s = document.createElement('div');
+    s.className = 'swatch' + (selectedRef() === color ? ' selected' : '');
+    s.style.background = color;
+    s.onclick = () => {
+      onSelect(color);
+      renderSwatches(containerId, selectedRef, onSelect);
+    };
+    c.appendChild(s);
+  });
+}
+
+// ─── Day checkboxes ───
+function renderDayCheckboxes() {
+  const c = document.getElementById('day-checkboxes');
+  c.innerHTML = '';
+  DAYS.forEach((d, i) => {
+    const lbl = document.createElement('label');
+    lbl.className = checkedDays.has(i) ? 'checked' : '';
+    lbl.innerHTML = `<input type="checkbox" ${checkedDays.has(i)?'checked':''}><span>${d}</span>`;
+    lbl.querySelector('input').onchange = (e) => {
+      if (e.target.checked) checkedDays.add(i); else checkedDays.delete(i);
+      lbl.className = checkedDays.has(i) ? 'checked' : '';
+    };
+    c.appendChild(lbl);
+  });
+}
+
+// ─── Open modals ───
+function openAddRowModal(rowId = null) {
+  editingRowId = rowId;
+  const modal = document.getElementById('row-modal');
+  document.getElementById('modal-title').textContent = rowId ? '✏️ Sửa khung giờ' : '＋ Thêm khung giờ';
+  checkedDays = new Set([0,1,2,3,4,5,6]);
+  selectedColor = TASK_COLORS[0];
+  document.getElementById('f-start').value = '';
+  document.getElementById('f-end').value = '';
+  document.getElementById('f-task').value = '';
+  document.getElementById('f-duration').textContent = '– phút';
+
+  if (rowId) {
+    const row = scheduleRows.find(r => r.id === rowId);
+    if (row) {
+      document.getElementById('f-start').value = row.start;
+      document.getElementById('f-end').value = row.end;
+      calcDuration();
+      // populate days + task from first non-empty task
+      const tasks = row.tasks || {};
+      const firstTask = Object.values(tasks).find(t => t && t.name);
+      if (firstTask) {
+        document.getElementById('f-task').value = firstTask.name;
+        selectedColor = firstTask.color || TASK_COLORS[0];
+      }
+      checkedDays = new Set(Object.keys(tasks).map(Number).filter(k => tasks[k] && tasks[k].name));
+    }
+  }
+
+  renderDayCheckboxes();
+  renderSwatches('color-swatches', () => selectedColor, c => { selectedColor = c; });
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('row-modal').classList.remove('open');
+  editingRowId = null;
+}
+
+function openCellEditModal(rowId, dayIdx) {
+  editingCellRowId = rowId;
+  editingCellDay = dayIdx;
+  const row = scheduleRows.find(r => r.id === rowId);
+  const task = row && row.tasks && row.tasks[dayIdx];
+  document.getElementById('cell-modal-title').textContent = `✏️ ${DAYS[dayIdx]} — ${row ? row.start+' - '+row.end : ''}`;
+  document.getElementById('cf-task').value = task ? task.name : '';
+  selectedCellColor = task ? (task.color || TASK_COLORS[0]) : TASK_COLORS[0];
+  renderSwatches('cell-color-swatches', () => selectedCellColor, c => { selectedCellColor = c; });
+  document.getElementById('cell-modal').classList.add('open');
+}
+function closeCellModal() {
+  document.getElementById('cell-modal').classList.remove('open');
+}
+
+// ─── Save row ───
+async function saveRow() {
+  const start = document.getElementById('f-start').value;
+  const end = document.getElementById('f-end').value;
+  const taskName = document.getElementById('f-task').value.trim();
+  if (!start || !end) { showToast('Vui lòng nhập giờ bắt đầu và kết thúc!'); return; }
+
+  if (editingRowId) {
+    const row = scheduleRows.find(r => r.id === editingRowId);
+    if (row) {
+      row.start = start; row.end = end;
+      if (taskName) {
+        checkedDays.forEach(i => {
+          if (!row.tasks) row.tasks = {};
+          row.tasks[i] = { name: taskName, color: selectedColor };
+        });
+      }
+    }
+  } else {
+    const tasks = {};
+    if (taskName) {
+      checkedDays.forEach(i => { tasks[i] = { name: taskName, color: selectedColor }; });
+    }
+    scheduleRows.push({ id: uuid(), start, end, tasks });
+  }
+
+  // Sort by start time
+  scheduleRows.sort((a,b) => a.start.localeCompare(b.start));
+  await saveRows();
+  closeModal();
+  renderTable();
+  renderStats();
+  showToast(editingRowId ? 'Đã cập nhật!' : 'Đã thêm khung giờ!');
+}
+
+// ─── Save cell edit ───
+async function saveCellEdit() {
+  const name = document.getElementById('cf-task').value.trim();
+  const row = scheduleRows.find(r => r.id === editingCellRowId);
+  if (row) {
+    if (!row.tasks) row.tasks = {};
+    row.tasks[editingCellDay] = name ? { name, color: selectedCellColor } : null;
+  }
+  await saveRows();
+  closeCellModal();
+  renderTable();
+  renderStats();
+  showToast('Đã lưu!');
+}
+async function clearCell() {
+  const row = scheduleRows.find(r => r.id === editingCellRowId);
+  if (row && row.tasks) row.tasks[editingCellDay] = null;
+  await saveRows();
+  closeCellModal();
+  renderTable();
+  renderStats();
+}
+
+// ─── Toggle completion ───
+async function toggleDone(rowId, dayIdx) {
+  const weekKey = getWeekKey(currentWeekOffset);
+  const key = `${weekKey}_${rowId}_${dayIdx}`;
+  const newVal = !completions[key];
+  if (newVal) completions[key] = true; else delete completions[key];
+  await saveCompletion(key, newVal);
+  renderTable();
+  renderStats();
+  if (newVal) showToast('🎉 Tuyệt vời! Con đã hoàn thành!');
+}
+
+// ─── Delete row ───
+async function deleteRow(rowId) {
+  if (!confirm('Xoá khung giờ này?')) return;
+  scheduleRows = scheduleRows.filter(r => r.id !== rowId);
+  await saveRows();
+  renderTable();
+  renderStats();
+  showToast('Đã xoá!');
+}
+
+// ─── Reset week ───
+async function resetWeekDone() {
+  if (!confirm('Reset trạng thái hoàn thành tuần này?')) return;
+  const weekKey = getWeekKey(currentWeekOffset);
+  if (useSupabase) {
+    try { await supabase_client.from('completions').delete().eq('week_key', weekKey); } catch(e) {}
+  }
+  completions = {};
+  localStorage.removeItem('completions_' + weekKey);
+  renderTable();
+  renderStats();
+  showToast('Đã reset tuần này!');
+}
+
+async function clearAllData() {
+  if (!confirm('Xoá toàn bộ dữ liệu? Không thể khôi phục!')) return;
+  scheduleRows = [];
+  completions = {};
+  await saveRows();
+  localStorage.clear();
+  renderTable();
+  renderStats();
+  showToast('Đã xoá tất cả!');
+}
+
+function changeWeek(dir) {
+  currentWeekOffset += dir;
+  updateWeekLabel();
+  loadData().then(() => { renderTable(); renderStats(); });
+}
+function goToday() {
+  currentWeekOffset = 0;
+  updateWeekLabel();
+  loadData().then(() => { renderTable(); renderStats(); });
+}
+function updateWeekLabel() {
+  const ws = getWeekStart(currentWeekOffset);
+  const we = addDays(ws, 6);
+  document.getElementById('week-label-text').textContent = `${formatDate(ws)} – ${formatDate(we)}`;
+  const mn = ws.getMonth()+1;
+  document.getElementById('month-badge').textContent = `Tháng ${mn}/${ws.getFullYear()}`;
+}
+
+// ─── Render table ───
+function renderTable() {
+  const weekStart = getWeekStart(currentWeekOffset);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Header
+  const hr = document.getElementById('header-row');
+  hr.innerHTML = '<th>Thời gian</th>';
+  DAYS.forEach((d, i) => {
+    const dayDate = addDays(weekStart, i);
+    const isToday = dayDate.getTime() === today.getTime();
+    hr.innerHTML += `<th style="${isToday ? 'background:rgba(255,255,255,0.25);' : ''}">${d}<span class="day-date">${formatDate(dayDate)}</span></th>`;
+  });
+
+  // Body
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+  const weekKey = getWeekKey(currentWeekOffset);
+
+  if (scheduleRows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-weight:700;">Chưa có khung giờ nào. Bấm "+ Thêm khung giờ" để bắt đầu!</td>`;
+    tbody.appendChild(tr);
+    document.getElementById('schedule-table').style.display = 'table';
+    document.getElementById('loading').style.display = 'none';
+    return;
+  }
+
+  scheduleRows.forEach(row => {
+    const [sh,sm] = row.start.split(':').map(Number);
+    const [eh,em] = row.end.split(':').map(Number);
+    const dur = (eh*60+em) - (sh*60+sm);
+
+    const tr = document.createElement('tr');
+
+    // Time col
+    const td0 = document.createElement('td');
+    td0.className = 'time-col';
+    td0.innerHTML = `<div class="time-range">${row.start}–${row.end}</div><div class="duration">${dur>0?dur+'p':''}</div>`;
+    // Row controls
+    const ctrl = document.createElement('div');
+    ctrl.className = 'row-controls';
+    ctrl.innerHTML = `<button class="row-ctrl-btn" onclick="openAddRowModal('${row.id}')" title="Sửa">✏️</button><button class="row-ctrl-btn" onclick="deleteRow('${row.id}')" title="Xoá">✕</button>`;
+    td0.style.position = 'relative';
+    td0.appendChild(ctrl);
+    tr.appendChild(td0);
+
+    // Day cells
+    DAYS.forEach((_, i) => {
+      const task = row.tasks && row.tasks[i];
+      const compKey = `${weekKey}_${row.id}_${i}`;
+      const isDone = !!completions[compKey];
+
+      const td = document.createElement('td');
+      if (task && task.name) {
+        const cell = document.createElement('div');
+        cell.className = 'task-cell' + (isDone ? ' done' : '');
+        cell.style.background = task.color || TASK_COLORS[0];
+        cell.innerHTML = `<div class="task-name">${task.name}</div><div class="done-badge">✓ Done</div>`;
+
+        // Single tap: toggle done; long press/right-click: edit
+        let pressTimer;
+        cell.onmousedown = () => { pressTimer = setTimeout(() => openCellEditModal(row.id, i), 600); };
+        cell.onmouseup = () => clearTimeout(pressTimer);
+        cell.ontouchstart = () => { pressTimer = setTimeout(() => openCellEditModal(row.id, i), 600); };
+        cell.ontouchend = () => clearTimeout(pressTimer);
+        cell.onclick = (e) => { e.stopPropagation(); toggleDone(row.id, i); };
+        cell.oncontextmenu = (e) => { e.preventDefault(); openCellEditModal(row.id, i); };
+        td.appendChild(cell);
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'empty-cell';
+        empty.innerHTML = `<span class="add-icon">＋</span>`;
+        empty.onclick = () => openCellEditModal(row.id, i);
+        td.appendChild(empty);
+      }
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('schedule-table').style.display = 'table';
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ─── Render stats ───
+function renderStats() {
+  const weekKey = getWeekKey(currentWeekOffset);
+  const subjectMap = {}; // name => {done, total, color}
+
+  scheduleRows.forEach(row => {
+    DAYS.forEach((_, i) => {
+      const task = row.tasks && row.tasks[i];
+      if (!task || !task.name) return;
+      if (!subjectMap[task.name]) subjectMap[task.name] = { done: 0, total: 0, color: task.color };
+      subjectMap[task.name].total++;
+      const key = `${weekKey}_${row.id}_${i}`;
+      if (completions[key]) subjectMap[task.name].done++;
+    });
+  });
+
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  if (Object.keys(subjectMap).length === 0) {
+    grid.innerHTML = '<div style="color:var(--muted);font-weight:600;font-size:0.85rem;">Chưa có dữ liệu.</div>';
+    return;
+  }
+
+  Object.entries(subjectMap).sort((a,b) => b[1].total - a[1].total).forEach(([name, info]) => {
+    const pct = info.total ? Math.round(info.done/info.total*100) : 0;
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.style.borderLeftColor = info.color || 'var(--primary)';
+    card.innerHTML = `
+      <div class="stat-subject">${name}</div>
+      <div class="stat-nums">
+        <span class="stat-done">${info.done}</span>
+        <span class="stat-total">/ ${info.total} (${pct}%)</span>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-fill" style="width:${pct}%;background:${info.color || 'var(--primary)'}"></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ─── Toast ───
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Click outside modal to close
+document.getElementById('row-modal').onclick = e => { if(e.target === document.getElementById('row-modal')) closeModal(); };
+document.getElementById('cell-modal').onclick = e => { if(e.target === document.getElementById('cell-modal')) closeCellModal(); };
+
+// ─── INIT ───
+async function init() {
+  await initSupabase();
+  updateWeekLabel();
+  await loadData();
+  renderTable();
+  renderStats();
+}
+
+init();
+</script>
+</body>
+</html>
