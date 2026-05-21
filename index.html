@@ -137,7 +137,7 @@ td {
   vertical-align: middle;
 }
 .time-col .time-range { font-size: 0.7rem; font-weight: 700; color: #1A7AAF; white-space: nowrap; }
-.time-col .dur { font-size: 0.62rem; color: var(--text-light); margin-top: 1px; }
+.time-col .dur { font-size: 0.78rem; font-weight: 800; color: #1A7AAF; margin-top: 2px; }
 .row-controls {
   display: flex; gap: 3px;
   position: absolute; top: 2px; right: 2px;
@@ -303,6 +303,82 @@ tr:hover .row-controls { opacity: 1; }
 .stat-bar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
 .stat-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
 
+/* ── REWARDS ── */
+.rewards-section { padding: 0 14px 20px; }
+.rewards-section h2 {
+  font-family: 'Baloo 2', cursive; font-size: 1rem; font-weight: 800;
+  color: var(--text); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.rewards-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.rewards-grid { display: flex; flex-direction: column; gap: 8px; }
+.reward-card {
+  background: var(--white); border-radius: 12px;
+  padding: 12px 16px; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 12px;
+  border-left: 4px solid var(--pastel-yellow);
+  transition: all .15s;
+}
+.reward-card.achieved { border-left-color: #3AAA7A; background: #F0FBF6; }
+.reward-card.not-achieved { opacity: 0.75; }
+.reward-status { font-size: 1.4rem; flex-shrink: 0; }
+.reward-info { flex: 1; }
+.reward-title { font-size: 0.85rem; font-weight: 800; color: var(--text); }
+.reward-cond { font-size: 0.75rem; color: var(--text-light); font-weight: 600; margin-top: 2px; }
+.reward-progress {
+  font-size: 0.72rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px;
+  background: var(--bg); color: var(--text-light);
+  white-space: nowrap;
+}
+.reward-progress.hit { background: #D4F5E5; color: #1A7A50; }
+.reward-del-btn {
+  background: none; border: none; cursor: pointer;
+  color: #FFB3B3; font-size: 1rem; padding: 2px 4px;
+  transition: color .12s;
+}
+.reward-del-btn:hover { color: #ff6666; }
+
+/* ── NOTIFICATION BAR ── */
+.notif-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px;
+  background: var(--pastel-yellow);
+  border-bottom: 1.5px solid #E0C840;
+  font-size: 0.8rem; font-weight: 700; color: #5A4A00;
+}
+.notif-bar.hidden { display: none; }
+.notif-bar .notif-icon { font-size: 1.1rem; }
+.notif-allow-btn {
+  margin-left: auto;
+  background: #FFD700; border: 1.5px solid #E0C000;
+  border-radius: 14px; padding: 4px 12px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.76rem; font-weight: 800;
+  cursor: pointer; color: #3A2A00; transition: background .12s;
+}
+.notif-allow-btn:hover { background: #FFC000; }
+.notif-dismiss { background: none; border: none; cursor: pointer; color: #5A4A00; font-size: 1rem; opacity: 0.6; }
+
+/* Upcoming indicator on time col */
+.time-col.upcoming { background: #FFF9C4 !important; }
+.time-col.ongoing  { background: #D4F5E5 !important; }
+.upcoming-badge {
+  display: inline-block;
+  background: #FFD700; color: #5A3A00;
+  border-radius: 8px; font-size: 0.6rem;
+  font-weight: 800; padding: 1px 5px; margin-top: 2px;
+}
+.ongoing-badge {
+  display: inline-block;
+  background: #3AAA7A; color: #fff;
+  border-radius: 8px; font-size: 0.6rem;
+  font-weight: 800; padding: 1px 5px; margin-top: 2px;
+}
+
 /* Loading */
 #loading {
   display: flex; align-items: center; justify-content: center;
@@ -338,6 +414,13 @@ footer {
   <div class="month-badge" id="month-badge">Tháng 5/2026</div>
 </header>
 
+<div class="notif-bar hidden" id="notif-bar">
+  <span class="notif-icon">🔔</span>
+  <span>Bật thông báo để nhắc con trước 5 phút mỗi hoạt động!</span>
+  <button class="notif-allow-btn" onclick="requestNotifPermission()">Bật thông báo</button>
+  <button class="notif-dismiss" onclick="document.getElementById('notif-bar').classList.add('hidden')">✕</button>
+</div>
+
 <div class="controls">
   <button class="btn btn-primary" onclick="openRowModal()">＋ Thêm khung giờ</button>
   <button class="btn btn-teal" onclick="openSpanModal()">＋ Thêm hàng chú thích</button>
@@ -364,6 +447,14 @@ footer {
 <div class="stats-section">
   <h2>📊 Thống kê tuần này</h2>
   <div class="stats-grid" id="stats-grid"></div>
+</div>
+
+<div class="rewards-section">
+  <div class="rewards-header">
+    <h2>🏆 Bảng tặng thưởng</h2>
+    <button class="btn btn-primary btn-sm" onclick="openRewardModal()">＋ Thêm tiêu chí</button>
+  </div>
+  <div class="rewards-grid" id="rewards-grid"></div>
 </div>
 
 <footer>Made with ❤️ for con yêu • Dữ liệu lưu trên Supabase</footer>
@@ -460,12 +551,37 @@ footer {
   </div>
 </div>
 
+<!-- MODAL: Thêm tiêu chí thưởng -->
+<div class="modal-overlay" id="reward-modal">
+  <div class="modal">
+    <h2>🏆 Thêm tiêu chí thưởng</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Môn học / hoạt động</label>
+        <select id="rf-subject"><option value="">-- Chọn môn --</option></select>
+      </div>
+      <div class="form-group full">
+        <label>Tỉ lệ hoàn thành tối thiểu (%)</label>
+        <input type="number" id="rf-pct" min="1" max="100" placeholder="Ví dụ: 80"/>
+      </div>
+      <div class="form-group full">
+        <label>Phần thưởng nếu đạt</label>
+        <input type="text" id="rf-reward" placeholder="Ví dụ: Chơi game ngoài 30 phút 🎮"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeRewardModal()">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveReward()">Lưu</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 // ── CONFIG ──
 const SUPABASE_URL = 'https://etilbevkhbissxlwspxr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_zOnqPCaQAmv8OQXlaZQP1Q_gYdiIBg9';
+const SUPABASE_KEY = 'sb_publishable_MtRy2v-lrvuZIx6G6nup9Q_SOFHZoM6';
 // ────────────
 
 const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ Nhật'];
@@ -670,7 +786,7 @@ async function saveRow(){
   }
   rows.sort((a,b)=>a.start.localeCompare(b.start));
   await saveRowsDB();
-  closeRowModal(); renderTable(); renderStats();
+  closeRowModal(); renderTable(); renderStats(); renderRewards();
   showToast(editRowId?'Đã cập nhật!':'Đã thêm khung giờ!');
 }
 
@@ -706,7 +822,7 @@ async function toggleDone(rowId,dayIdx){
   const nv=!done[key];
   if(nv) done[key]=true; else delete done[key];
   await saveComp(key,nv);
-  renderTable(); renderStats();
+  renderTable(); renderStats(); renderRewards();
   if(nv) showToast('🎉 Giỏi lắm! Con đã hoàn thành!');
 }
 
@@ -731,8 +847,8 @@ async function clearAll(){
   renderTable(); renderStats(); showToast('Đã xoá tất cả!');
 }
 
-function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); }); }
-function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); }); }
+function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); renderRewards(); }); }
+function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); renderRewards(); }); }
 function updateWeekLabel(){
   const ws=getWeekStart(weekOffset), we=addD(ws,6);
   document.getElementById('week-label-text').textContent=`${fmt(ws)} – ${fmt(we)}`;
@@ -773,6 +889,18 @@ function renderTable(){
     td0.className='time-col';
     td0.style.position='relative';
     td0.innerHTML=`<div class="time-range">${row.start}–${row.end}</div><div class="dur">${dur>0?dur+'p':''}</div>`;
+
+    // Highlight ongoing / upcoming (today only)
+    if(weekOffset === 0 && row.type === 'task'){
+      const status = getStatusForRow(row);
+      if(status === 'ongoing'){
+        td0.classList.add('ongoing');
+        td0.querySelector('.dur').insertAdjacentHTML('afterend','<div class="ongoing-badge">▶ Đang học</div>');
+      } else if(status === 'upcoming'){
+        td0.classList.add('upcoming');
+        td0.querySelector('.dur').insertAdjacentHTML('afterend','<div class="upcoming-badge">⏰ 5 phút nữa</div>');
+      }
+    }
     const ctrl=document.createElement('div');
     ctrl.className='row-controls';
     if(row.type!=='span'){
@@ -859,6 +987,187 @@ function renderStats(){
   });
 }
 
+let rewards = []; // [{id, subject, pct, reward}]
+
+function loadRewards(){
+  const r=localStorage.getItem('rewards_v1');
+  if(r) rewards=JSON.parse(r);
+}
+function saveRewards(){
+  localStorage.setItem('rewards_v1',JSON.stringify(rewards));
+}
+
+function openRewardModal(){
+  // Populate subject dropdown from current stats
+  const wk=getWeekKey(weekOffset);
+  const subjects=new Set();
+  rows.forEach(row=>{
+    if(row.type!=='task') return;
+    for(let i=0;i<7;i++){
+      const t=row.tasks&&row.tasks[i];
+      if(t&&t.name) subjects.add(t.name);
+    }
+  });
+  const sel=document.getElementById('rf-subject');
+  sel.innerHTML='<option value="">-- Chọn môn --</option>';
+  subjects.forEach(s=>{ sel.innerHTML+=`<option value="${s}">${s}</option>`; });
+  document.getElementById('rf-pct').value='';
+  document.getElementById('rf-reward').value='';
+  document.getElementById('reward-modal').classList.add('open');
+}
+function closeRewardModal(){ document.getElementById('reward-modal').classList.remove('open'); }
+
+function saveReward(){
+  const subject=document.getElementById('rf-subject').value;
+  const pct=parseInt(document.getElementById('rf-pct').value);
+  const reward=document.getElementById('rf-reward').value.trim();
+  if(!subject||!pct||!reward){ showToast('Vui lòng điền đầy đủ!'); return; }
+  rewards.push({id:uid(),subject,pct,reward});
+  saveRewards();
+  closeRewardModal();
+  renderRewards();
+  showToast('Đã thêm tiêu chí thưởng!');
+}
+
+function deleteReward(id){
+  rewards=rewards.filter(r=>r.id!==id);
+  saveRewards();
+  renderRewards();
+}
+
+function renderRewards(){
+  const wk=getWeekKey(weekOffset);
+  // Build stats map
+  const map={};
+  rows.forEach(row=>{
+    if(row.type!=='task') return;
+    for(let i=0;i<7;i++){
+      const t=row.tasks&&row.tasks[i];
+      if(!t||!t.name) continue;
+      if(!map[t.name]) map[t.name]={done:0,total:0};
+      map[t.name].total++;
+      if(done[`${wk}_${row.id}_${i}`]) map[t.name].done++;
+    }
+  });
+
+  const grid=document.getElementById('rewards-grid');
+  grid.innerHTML='';
+  if(!rewards.length){
+    grid.innerHTML='<div style="color:var(--text-light);font-weight:600;font-size:0.82rem;">Chưa có tiêu chí. Bấm "+ Thêm tiêu chí" để tạo!</div>';
+    return;
+  }
+  rewards.forEach(r=>{
+    const info=map[r.subject]||{done:0,total:0};
+    const actualPct=info.total?Math.round(info.done/info.total*100):0;
+    const achieved=actualPct>=r.pct;
+    const card=document.createElement('div');
+    card.className='reward-card '+(achieved?'achieved':'not-achieved');
+    card.innerHTML=`
+      <div class="reward-status">${achieved?'🏆':'🎯'}</div>
+      <div class="reward-info">
+        <div class="reward-title">${r.reward}</div>
+        <div class="reward-cond">${r.subject} ≥ ${r.pct}% hoàn thành</div>
+      </div>
+      <div class="reward-progress ${achieved?'hit':''}">${actualPct}% / ${r.pct}%</div>
+      <button class="reward-del-btn" onclick="deleteReward('${r.id}')" title="Xoá">✕</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── NOTIFICATIONS ──
+let notifTimers = [];
+
+function checkNotifSupport(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    document.getElementById('notif-bar').classList.remove('hidden');
+  }
+}
+
+async function requestNotifPermission(){
+  const perm = await Notification.requestPermission();
+  document.getElementById('notif-bar').classList.add('hidden');
+  if(perm === 'granted'){
+    showToast('🔔 Đã bật thông báo!');
+    scheduleNotifications();
+  } else {
+    showToast('Không bật được thông báo. Kiểm tra cài đặt trình duyệt!');
+  }
+}
+
+function scheduleNotifications(){
+  // Clear old timers
+  notifTimers.forEach(t => clearTimeout(t));
+  notifTimers = [];
+
+  if(Notification.permission !== 'granted') return;
+
+  const now = new Date();
+  const todayDayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+  // Convert to our index: Mon=0 ... Sun=6
+  const todayIdx = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1;
+
+  rows.forEach(row => {
+    if(row.type !== 'task') return;
+    const task = row.tasks && row.tasks[todayIdx];
+    if(!task || !task.name) return;
+
+    const [h, m] = row.start.split(':').map(Number);
+    const taskTime = new Date();
+    taskTime.setHours(h, m, 0, 0);
+
+    // Notify 5 minutes before
+    const notifTime5 = new Date(taskTime.getTime() - 5 * 60 * 1000);
+    // Notify exactly at start
+    const notifTime0 = new Date(taskTime.getTime());
+
+    const ms5 = notifTime5 - now;
+    const ms0 = notifTime0 - now;
+
+    if(ms5 > 0){
+      const t = setTimeout(() => {
+        new Notification('⏰ Sắp đến giờ!', {
+          body: `${task.name} bắt đầu lúc ${row.start} — còn 5 phút nữa!`,
+          icon: '⭐',
+          badge: '⭐'
+        });
+      }, ms5);
+      notifTimers.push(t);
+    }
+
+    if(ms0 > 0){
+      const t = setTimeout(() => {
+        new Notification('🚀 Bắt đầu ngay!', {
+          body: `${task.name} (${row.start} – ${row.end}) — Cố lên con! 💪`,
+          icon: '⭐'
+        });
+        renderTable(); // refresh to show ongoing highlight
+      }, ms0);
+      notifTimers.push(t);
+    }
+  });
+}
+
+function getStatusForRow(row){
+  const now = new Date();
+  const [sh, sm] = row.start.split(':').map(Number);
+  const [eh, em] = row.end.split(':').map(Number);
+  const start = new Date(); start.setHours(sh, sm, 0, 0);
+  const end   = new Date(); end.setHours(eh, em, 0, 0);
+  const before5 = new Date(start.getTime() - 5 * 60 * 1000);
+
+  if(now >= start && now < end) return 'ongoing';
+  if(now >= before5 && now < start) return 'upcoming';
+  return 'none';
+}
+
+// Re-schedule every minute to stay accurate
+setInterval(() => {
+  scheduleNotifications();
+  renderTable(); // refresh ongoing/upcoming highlights
+}, 60 * 1000);
+
 // Toast
 let tt;
 function showToast(msg){
@@ -868,7 +1177,7 @@ function showToast(msg){
 }
 
 // Close on overlay click
-['row-modal','span-modal','cell-modal'].forEach(id=>{
+['row-modal','span-modal','cell-modal','reward-modal'].forEach(id=>{
   document.getElementById(id).onclick=e=>{ if(e.target.id===id) document.getElementById(id).classList.remove('open'); };
 });
 
@@ -877,8 +1186,12 @@ async function init(){
   await initDB();
   updateWeekLabel();
   await loadData();
+  loadRewards();
   renderTable();
   renderStats();
+  renderRewards();
+  checkNotifSupport();
+  if(Notification.permission === 'granted') scheduleNotifications();
 }
 init();
 </script>
