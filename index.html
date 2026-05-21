@@ -514,15 +514,10 @@ footer {
   <button class="add-row-btn" onclick="openRowModal()">＋ Thêm khung giờ mới</button>
 </div>
 
-<div class="stats-section">
-  <h2>📊 Thống kê tuần này</h2>
-  <div class="stats-grid" id="stats-grid"></div>
-</div>
-
 <!-- CHORE CHART -->
 <div class="chore-section">
   <div class="chore-header">
-    <h2>🧹 Bảng Chore Chart</h2>
+    <h2>🧹 Bảng công việc</h2>
     <button class="btn btn-primary btn-sm" style="background:#B5EAD7;color:#1A5030;border-color:#8DD8B8;" onclick="openChoreModal()">＋ Thêm công việc</button>
   </div>
   <div class="chore-table-wrap">
@@ -532,6 +527,11 @@ footer {
     </table>
   </div>
   <div class="chore-week-summary" id="chore-summary"></div>
+</div>
+
+<div class="stats-section">
+  <h2>📊 Thống kê tuần này</h2>
+  <div class="stats-grid" id="stats-grid"></div>
 </div>
 
 <div class="rewards-section">
@@ -1074,30 +1074,57 @@ function renderTable(){
 // ── Stats ──
 function renderStats(){
   const wk=getWeekKey(weekOffset);
-  const map={};
+  const grid=document.getElementById('stats-grid');
+  grid.innerHTML='';
+
+  // --- Thời gian biểu ---
+  const schedMap={};
   rows.forEach(row=>{
     if(row.type!=='task') return;
     for(let i=0;i<7;i++){
       const t=row.tasks&&row.tasks[i];
       if(!t||!t.name) continue;
-      if(!map[t.name]) map[t.name]={done:0,total:0,color:t.color};
-      map[t.name].total++;
-      if(done[`${wk}_${row.id}_${i}`]) map[t.name].done++;
+      if(!schedMap[t.name]) schedMap[t.name]={done:0,total:0,color:t.color,source:'sched'};
+      schedMap[t.name].total++;
+      if(done[`${wk}_${row.id}_${i}`]) schedMap[t.name].done++;
     }
   });
-  const grid=document.getElementById('stats-grid');
-  grid.innerHTML='';
-  if(!Object.keys(map).length){
+
+  // --- Bảng công việc ---
+  const choreMap={};
+  chores.forEach(ch=>{
+    const applicable=(ch.days||[]).length;
+    if(!applicable) return;
+    const doneCount=(ch.days||[]).filter(i=>choreDone[`${wk}_${ch.id}_${i}`]).length;
+    choreMap[ch.name]={done:doneCount,total:applicable,color:ch.color,source:'chore'};
+  });
+
+  const hasAnything = Object.keys(schedMap).length || Object.keys(choreMap).length;
+  if(!hasAnything){
     grid.innerHTML='<div style="color:var(--text-light);font-weight:600;font-size:0.82rem;">Chưa có dữ liệu.</div>';
     return;
   }
-  Object.entries(map).sort((a,b)=>b[1].total-a[1].total).forEach(([name,info])=>{
+
+  function makeCard(name, info){
     const pct=info.total?Math.round(info.done/info.total*100):0;
     const card=document.createElement('div');
     card.className='stat-card';
     card.style.borderLeftColor=info.color||'var(--sky)';
-    card.innerHTML=`<div class="stat-subject">${name}</div><div class="stat-nums"><span class="stat-done">${info.done}</span><span class="stat-total">/ ${info.total} (${pct}%)</span></div><div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${info.color||'var(--sky)'}"></div></div>`;
-    grid.appendChild(card);
+    const tag = info.source==='chore'
+      ? `<span style="font-size:0.62rem;background:#D4F5E5;color:#1A5030;border-radius:8px;padding:1px 6px;font-weight:700;margin-left:4px;">Công việc</span>`
+      : `<span style="font-size:0.62rem;background:#D6EEF8;color:#1A5070;border-radius:8px;padding:1px 6px;font-weight:700;margin-left:4px;">Thời khóa biểu</span>`;
+    card.innerHTML=`<div class="stat-subject">${name}${tag}</div><div class="stat-nums"><span class="stat-done">${info.done}</span><span class="stat-total">/ ${info.total} (${pct}%)</span></div><div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${info.color||'var(--sky)'}"></div></div>`;
+    return card;
+  }
+
+  // Render schedule stats
+  Object.entries(schedMap).sort((a,b)=>b[1].total-a[1].total).forEach(([name,info])=>{
+    grid.appendChild(makeCard(name,info));
+  });
+
+  // Render chore stats
+  Object.entries(choreMap).sort((a,b)=>b[1].total-a[1].total).forEach(([name,info])=>{
+    grid.appendChild(makeCard(name,info));
   });
 }
 
@@ -1265,7 +1292,7 @@ function toggleChoreDone(choreId, dayIdx){
   const key = `${wk}_${choreId}_${dayIdx}`;
   const nv = !choreDone[key];
   if(nv) choreDone[key]=true; else delete choreDone[key];
-  saveChoreDone(); renderChoreTable();
+  saveChoreDone(); renderChoreTable(); renderStats();
   if(nv) showToast('⭐ Giỏi quá!');
 }
 
