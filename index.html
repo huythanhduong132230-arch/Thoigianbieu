@@ -392,6 +392,37 @@ tr:hover .row-controls { opacity: 1; }
 .icon-pick-btn span { font-size: 0.7rem; font-weight: 700; color: var(--text-light); }
 .icon-pick-btn:hover { background: var(--sky-light); border-color: var(--sky); }
 
+/* Stats hide button */
+.stat-card { position: relative; }
+.stat-hide-btn {
+  display: none;
+  position: absolute; top: 6px; right: 6px;
+  background: #FFB3B3; border: none; border-radius: 50%;
+  width: 18px; height: 18px; cursor: pointer;
+  font-size: 0.6rem; color: #7a2020;
+  align-items: center; justify-content: center;
+  line-height: 1; transition: background .12s;
+}
+.stat-hide-btn:hover { background: #ff8888; }
+.stats-edit-mode .stat-hide-btn { display: flex; }
+.stats-edit-mode .stat-card { opacity: 1; }
+.stat-card.stat-hidden { display: none; }
+.stats-edit-mode .stat-card.stat-hidden {
+  display: block; opacity: 0.4;
+  border-left-color: #ccc !important;
+}
+.stat-show-btn {
+  display: none;
+  position: absolute; top: 6px; right: 6px;
+  background: #B5EAD7; border: none; border-radius: 50%;
+  width: 18px; height: 18px; cursor: pointer;
+  font-size: 0.65rem; color: #1A5030;
+  align-items: center; justify-content: center;
+  line-height: 1;
+}
+.stats-edit-mode .stat-card.stat-hidden .stat-show-btn { display: flex; }
+.stats-edit-mode .stat-card.stat-hidden .stat-hide-btn { display: none; }
+
 /* Loading */
 #loading {
   display: flex; align-items: center; justify-content: center;
@@ -542,7 +573,10 @@ footer {
 </div>
 
 <div class="stats-section">
-  <h2>📊 Thống kê tuần này</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <h2 style="margin-bottom:0;">📊 Thống kê tuần này</h2>
+    <button class="btn btn-outline btn-sm" id="stats-edit-btn" onclick="toggleStatsEdit()">✏️ Ẩn/hiện</button>
+  </div>
   <div class="stats-grid" id="stats-grid"></div>
 </div>
 
@@ -1089,6 +1123,27 @@ function renderTable(){
 }
 
 // ── Stats ──
+let hiddenStats = new Set(JSON.parse(localStorage.getItem('hiddenStats')||'[]'));
+let statsEditMode = false;
+
+function toggleStatsEdit(){
+  statsEditMode = !statsEditMode;
+  const grid = document.getElementById('stats-grid');
+  grid.classList.toggle('stats-edit-mode', statsEditMode);
+  document.getElementById('stats-edit-btn').textContent = statsEditMode ? '✅ Xong' : '✏️ Ẩn/hiện';
+}
+
+function toggleHideStat(name){
+  if(hiddenStats.has(name)) hiddenStats.delete(name);
+  else hiddenStats.add(name);
+  localStorage.setItem('hiddenStats', JSON.stringify([...hiddenStats]));
+  renderStats();
+  // keep edit mode on after re-render
+  if(statsEditMode){
+    document.getElementById('stats-grid').classList.add('stats-edit-mode');
+  }
+}
+
 function renderStats(){
   const wk=getWeekKey(weekOffset);
   const grid=document.getElementById('stats-grid');
@@ -1125,12 +1180,19 @@ function renderStats(){
   function makeCard(name, info){
     const pct=info.total?Math.round(info.done/info.total*100):0;
     const card=document.createElement('div');
-    card.className='stat-card';
+    const isHidden = hiddenStats.has(name);
+    card.className='stat-card'+(isHidden?' stat-hidden':'');
     card.style.borderLeftColor=info.color||'var(--sky)';
     const tag = info.source==='chore'
       ? `<span style="font-size:0.62rem;background:#D4F5E5;color:#1A5030;border-radius:8px;padding:1px 6px;font-weight:700;margin-left:4px;">Công việc</span>`
       : `<span style="font-size:0.62rem;background:#D6EEF8;color:#1A5070;border-radius:8px;padding:1px 6px;font-weight:700;margin-left:4px;">Thời khóa biểu</span>`;
-    card.innerHTML=`<div class="stat-subject">${name}${tag}</div><div class="stat-nums"><span class="stat-done">${info.done}</span><span class="stat-total">/ ${info.total} (${pct}%)</span></div><div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${info.color||'var(--sky)'}"></div></div>`;
+    card.innerHTML=`
+      <button class="stat-hide-btn" onclick="toggleHideStat('${name.replace(/'/g,"\\'")}')">✕</button>
+      <button class="stat-show-btn" onclick="toggleHideStat('${name.replace(/'/g,"\\'")}')">👁</button>
+      <div class="stat-subject">${name}${tag}</div>
+      <div class="stat-nums"><span class="stat-done">${info.done}</span><span class="stat-total">/ ${info.total} (${pct}%)</span></div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${info.color||'var(--sky)'}"></div></div>
+    `;
     return card;
   }
 
@@ -1143,6 +1205,9 @@ function renderStats(){
   Object.entries(choreMap).sort((a,b)=>b[1].total-a[1].total).forEach(([name,info])=>{
     grid.appendChild(makeCard(name,info));
   });
+
+  // Restore edit mode if active
+  if(statsEditMode) grid.classList.add('stats-edit-mode');
 }
 
 let rewards = []; // [{id, subject, pct, reward}]
