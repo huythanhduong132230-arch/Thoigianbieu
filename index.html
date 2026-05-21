@@ -688,12 +688,16 @@ footer {
 
 <!-- MODAL: Thêm tiêu chí thưởng -->
 <div class="modal-overlay" id="reward-modal">
-  <div class="modal">
+  <div class="modal" style="max-width:500px;">
     <h2>🏆 Thêm tiêu chí thưởng</h2>
     <div class="form-grid">
       <div class="form-group full">
-        <label>Môn học / hoạt động</label>
-        <select id="rf-subject"><option value="">-- Chọn môn --</option></select>
+        <label>Tên nhóm tiêu chí</label>
+        <input type="text" id="rf-group" placeholder="Ví dụ: Nhóm học, Công việc nhà..."/>
+      </div>
+      <div class="form-group full">
+        <label>Chọn các môn/hoạt động vào nhóm</label>
+        <div id="rf-subject-checks" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
       </div>
       <div class="form-group full">
         <label>Tỉ lệ hoàn thành tối thiểu (%)</label>
@@ -1257,19 +1261,34 @@ function renderIconPicker(inputId){
   });
 }
 function openRewardModal(){
-  // Populate dropdown from schedule + chores
+  // Collect all subjects from schedule + chores
   const subjects = new Map();
   rows.forEach(row=>{
     if(row.type!=='task') return;
     for(let i=0;i<7;i++){
       const t=row.tasks&&row.tasks[i];
-      if(t&&t.name) subjects.set(t.name,'📅 Thời khóa biểu');
+      if(t&&t.name) subjects.set(t.name,'📅');
     }
   });
-  chores.forEach(ch=>{ if(ch.name) subjects.set(ch.name,'🧹 Công việc'); });
-  const sel=document.getElementById('rf-subject');
-  sel.innerHTML='<option value="">-- Chọn hoạt động --</option>';
-  subjects.forEach((label,name)=>{ sel.innerHTML+=`<option value="${name}">${name} (${label})</option>`; });
+  chores.forEach(ch=>{ if(ch.name) subjects.set(ch.name,'🧹'); });
+
+  // Render checkboxes
+  const container = document.getElementById('rf-subject-checks');
+  container.innerHTML='';
+  subjects.forEach((icon, name)=>{
+    const lbl = document.createElement('label');
+    lbl.className='day-checks-item';
+    lbl.style.cssText='display:flex;align-items:center;gap:4px;background:var(--bg);border:1.5px solid var(--border);border-radius:16px;padding:3px 10px;cursor:pointer;font-size:0.78rem;font-weight:700;transition:all .12s;';
+    const cb = document.createElement('input');
+    cb.type='checkbox'; cb.value=name; cb.style.display='none';
+    const sp = document.createElement('span');
+    sp.textContent=`${icon} ${name}`;
+    lbl.appendChild(cb); lbl.appendChild(sp);
+    cb.onchange=()=>{ lbl.style.background=cb.checked?'var(--sky)':'var(--bg)'; lbl.style.borderColor=cb.checked?'#6BBCD8':'var(--border)'; };
+    container.appendChild(lbl);
+  });
+
+  document.getElementById('rf-group').value='';
   document.getElementById('rf-pct').value='';
   document.getElementById('rf-reward').value='';
   document.getElementById('reward-modal').classList.add('open');
@@ -1277,11 +1296,12 @@ function openRewardModal(){
 function closeRewardModal(){ document.getElementById('reward-modal').classList.remove('open'); }
 
 function saveReward(){
-  const subject=document.getElementById('rf-subject').value;
-  const pct=parseInt(document.getElementById('rf-pct').value);
-  const reward=document.getElementById('rf-reward').value.trim();
-  if(!subject||!pct||!reward){ showToast('Vui lòng điền đầy đủ!'); return; }
-  rewards.push({id:uid(),subject,pct,reward});
+  const group = document.getElementById('rf-group').value.trim();
+  const pct = parseInt(document.getElementById('rf-pct').value);
+  const reward = document.getElementById('rf-reward').value.trim();
+  const subjects = [...document.querySelectorAll('#rf-subject-checks input:checked')].map(cb=>cb.value);
+  if(!group||!pct||!reward||!subjects.length){ showToast('Vui lòng điền đầy đủ và chọn ít nhất 1 môn!'); return; }
+  rewards.push({id:uid(), group, subjects, pct, reward});
   saveRewards();
   closeRewardModal();
   renderRewards();
@@ -1296,7 +1316,7 @@ function deleteReward(id){
 
 function renderRewards(){
   const wk=getWeekKey(weekOffset);
-  // Build combined stats map (schedule + chores)
+  // Build combined stats map
   const map={};
   rows.forEach(row=>{
     if(row.type!=='task') return;
@@ -1308,7 +1328,6 @@ function renderRewards(){
       if(done[`${wk}_${row.id}_${i}`]) map[t.name].done++;
     }
   });
-  // Add chore stats
   chores.forEach(ch=>{
     if(!ch.name) return;
     if(!map[ch.name]) map[ch.name]={done:0,total:0};
@@ -1324,20 +1343,41 @@ function renderRewards(){
     grid.innerHTML='<div style="color:var(--text-light);font-weight:600;font-size:0.82rem;">Chưa có tiêu chí. Bấm "+ Thêm tiêu chí" để tạo!</div>';
     return;
   }
+
   rewards.forEach(r=>{
-    const info=map[r.subject]||{done:0,total:0};
-    const actualPct=info.total?Math.round(info.done/info.total*100):0;
-    const achieved=actualPct>=r.pct;
+    // Support both old single-subject and new group format
+    const subjects = r.subjects || (r.subject ? [r.subject] : []);
+    const groupName = r.group || r.subject || 'Nhóm';
+
+    // Calculate average % across all subjects in group
+    let totalDone=0, totalAll=0;
+    subjects.forEach(s=>{
+      const info=map[s]||{done:0,total:0};
+      totalDone+=info.done; totalAll+=info.total;
+    });
+    const actualPct = totalAll ? Math.round(totalDone/totalAll*100) : 0;
+    const achieved = actualPct >= r.pct;
+
+    // Build subject tags
+    const subjectTags = subjects.map(s=>{
+      const info=map[s]||{done:0,total:0};
+      const pct=info.total?Math.round(info.done/info.total*100):0;
+      return `<span style="display:inline-block;background:${pct>=r.pct?'#D4F5E5':'#F0F4FF'};color:${pct>=r.pct?'#1A5030':'#3A5068'};border-radius:8px;padding:1px 7px;font-size:0.68rem;font-weight:700;margin:2px 2px 0 0;">${s}: ${pct}%</span>`;
+    }).join('');
+
     const card=document.createElement('div');
     card.className='reward-card '+(achieved?'achieved':'not-achieved');
     card.innerHTML=`
       <div class="reward-status">${achieved?'🏆':'🎯'}</div>
-      <div class="reward-info">
+      <div class="reward-info" style="flex:1;">
         <div class="reward-title">${r.reward}</div>
-        <div class="reward-cond">${r.subject} ≥ ${r.pct}% hoàn thành</div>
+        <div class="reward-cond" style="margin-bottom:4px;">${groupName} ≥ ${r.pct}% hoàn thành</div>
+        <div>${subjectTags}</div>
       </div>
-      <div class="reward-progress ${achieved?'hit':''}">${actualPct}% / ${r.pct}%</div>
-      <button class="reward-del-btn" onclick="deleteReward('${r.id}')" title="Xoá">✕</button>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+        <div class="reward-progress ${achieved?'hit':''}">${actualPct}%</div>
+        <button class="reward-del-btn" onclick="deleteReward('${r.id}')" title="Xoá">✕</button>
+      </div>
     `;
     grid.appendChild(card);
   });
