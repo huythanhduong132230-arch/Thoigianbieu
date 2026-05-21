@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Thời Gian Biểu Của Con ⭐</title>
+<title>Bảng theo dõi và khen thưởng bé Bút Bi ⭐</title>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -169,9 +169,10 @@ tr:hover .row-controls { opacity: 1; }
   color: #2D4A5E; word-break: break-word;
 }
 .task-cell .done-badge {
-  display: none; background: rgba(255,255,255,0.75);
-  border-radius: 10px; font-size: 0.62rem;
-  font-weight: 800; color: #1a7a50; padding: 1px 6px;
+  display: none; background: rgba(255,255,255,0.85);
+  border-radius: 10px; font-size: 0.58rem;
+  font-weight: 800; color: #1a7a50; padding: 2px 6px;
+  text-align: center; line-height: 1.3;
 }
 .task-cell.done .done-badge { display: block; }
 .task-cell.done::after {
@@ -401,6 +402,75 @@ tr:hover .row-controls { opacity: 1; }
 }
 #toast.show { opacity: 1; }
 
+/* ── CHORE CHART ── */
+.chore-section { padding: 0 14px 20px; }
+.chore-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.chore-header h2 {
+  font-family: 'Baloo 2', cursive; font-size: 1rem; font-weight: 800;
+  color: var(--text); display: flex; align-items: center; gap: 6px;
+}
+.chore-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.chore-table {
+  width: 100%; border-collapse: collapse;
+  background: var(--white); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+  border: 1.5px solid var(--border); min-width: 600px;
+}
+.chore-table thead th {
+  background: #B5EAD7;
+  color: #1A5030;
+  font-weight: 800; font-size: 0.78rem;
+  padding: 9px 6px; text-align: center;
+  border: 1px solid #8DD8B8;
+}
+.chore-table thead th:first-child {
+  background: #8DD8B8; width: 160px; text-align: left; padding-left: 12px;
+}
+.chore-table thead th.today-col { background: #3AAA7A !important; color: #fff !important; }
+.chore-table td {
+  border: 1px solid var(--border); padding: 0; vertical-align: middle;
+}
+.chore-name-cell {
+  padding: 8px 12px;
+  background: #F0FBF6;
+  position: relative;
+}
+.chore-name-cell .chore-title {
+  font-size: 0.8rem; font-weight: 800; color: #1A5030;
+}
+.chore-name-cell .chore-sub {
+  font-size: 0.68rem; color: var(--text-light); font-weight: 600; margin-top: 1px;
+}
+.chore-name-cell .chore-row-controls {
+  position: absolute; top: 4px; right: 4px;
+  opacity: 0; transition: opacity .12s; display: flex; gap: 3px;
+}
+tr:hover .chore-row-controls { opacity: 1; }
+.chore-tick {
+  min-height: 44px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; transition: background .12s;
+  background: transparent;
+}
+.chore-tick:hover { background: #F0FBF6; }
+.chore-tick.ticked { background: #D4F5E5; }
+.chore-tick.ticked::after { content: '✅'; }
+.chore-tick:not(.ticked)::after { content: '⬜'; opacity: 0.4; }
+.chore-tick:hover:not(.ticked)::after { opacity: 0.7; }
+.chore-week-summary {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+}
+.chore-summary-pill {
+  background: var(--white); border-radius: 20px;
+  padding: 4px 12px; font-size: 0.76rem; font-weight: 700;
+  color: var(--text); box-shadow: var(--shadow);
+  border-left: 3px solid #3AAA7A;
+}
+.chore-summary-pill span { color: #3AAA7A; }
+
 footer {
   text-align: center; padding: 16px;
   color: var(--text-light); font-size: 0.75rem; font-weight: 600;
@@ -410,7 +480,7 @@ footer {
 <body>
 
 <header>
-  <h1>⭐ Thời Gian Biểu Của Con</h1>
+  <h1>⭐ Bảng theo dõi và khen thưởng bé Bút Bi</h1>
   <div class="month-badge" id="month-badge">Tháng 5/2026</div>
 </header>
 
@@ -447,6 +517,21 @@ footer {
 <div class="stats-section">
   <h2>📊 Thống kê tuần này</h2>
   <div class="stats-grid" id="stats-grid"></div>
+</div>
+
+<!-- CHORE CHART -->
+<div class="chore-section">
+  <div class="chore-header">
+    <h2>🧹 Bảng Chore Chart</h2>
+    <button class="btn btn-primary btn-sm" style="background:#B5EAD7;color:#1A5030;border-color:#8DD8B8;" onclick="openChoreModal()">＋ Thêm công việc</button>
+  </div>
+  <div class="chore-table-wrap">
+    <table class="chore-table" id="chore-table">
+      <thead><tr id="chore-header-row"></tr></thead>
+      <tbody id="chore-tbody"></tbody>
+    </table>
+  </div>
+  <div class="chore-week-summary" id="chore-summary"></div>
 </div>
 
 <div class="rewards-section">
@@ -572,6 +657,35 @@ footer {
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeRewardModal()">Huỷ</button>
       <button class="btn btn-primary" onclick="saveReward()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Thêm chore -->
+<div class="modal-overlay" id="chore-modal">
+  <div class="modal">
+    <h2 id="chore-modal-title">🧹 Thêm công việc</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Tên công việc</label>
+        <input type="text" id="cm-name" placeholder="Ví dụ: Dọn phòng, Đánh răng..."/>
+      </div>
+      <div class="form-group full">
+        <label>Ghi chú (tuỳ chọn)</label>
+        <input type="text" id="cm-note" placeholder="Ví dụ: Trước 8 giờ tối"/>
+      </div>
+      <div class="form-group full">
+        <label>Áp dụng cho ngày</label>
+        <div class="day-checks" id="chore-day-checks"></div>
+      </div>
+      <div class="form-group full">
+        <label>Màu</label>
+        <div class="color-swatches" id="chore-color-swatches"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeChoreModal()">Huỷ</button>
+      <button class="btn btn-primary" style="background:#3AAA7A;border-color:#2A8A5A;" onclick="saveChore()">Lưu</button>
     </div>
   </div>
 </div>
@@ -847,8 +961,8 @@ async function clearAll(){
   renderTable(); renderStats(); showToast('Đã xoá tất cả!');
 }
 
-function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); renderRewards(); }); }
-function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); renderRewards(); }); }
+function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(()=>{ loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
+function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(()=>{ loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
 function updateWeekLabel(){
   const ws=getWeekStart(weekOffset), we=addD(ws,6);
   document.getElementById('week-label-text').textContent=`${fmt(ws)} – ${fmt(we)}`;
@@ -931,7 +1045,7 @@ function renderTable(){
           const cell=document.createElement('div');
           cell.className='task-cell'+(isDone?' done':'');
           cell.style.background=task.color||TASK_COLORS[0];
-          cell.innerHTML=`<div class="task-name">${task.name}</div><div class="done-badge">✓ Done</div>`;
+          cell.innerHTML=`<div class="task-name">${task.name}</div><div class="done-badge">🌟 Tốt lắm, cố lên!</div>`;
           let pt;
           cell.onmousedown=()=>{ pt=setTimeout(()=>openCellModal(row.id,i),600); };
           cell.onmouseup=()=>clearTimeout(pt);
@@ -1075,6 +1189,157 @@ function renderRewards(){
   });
 }
 
+// ── CHORE CHART ──
+let chores = [];       // [{id, name, note, days:[0..6], color}]
+let choreDone = {};    // weekKey_choreId_dayIdx => true
+let editChoreId = null;
+let selChoreColor = TASK_COLORS[2]; // default green-ish
+let choreCheckedDays = new Set([0,1,2,3,4,5,6]);
+
+function loadChores(){
+  const c = localStorage.getItem('chores_v1'); if(c) chores = JSON.parse(c);
+  const wk = getWeekKey(weekOffset);
+  const d = localStorage.getItem('choreDone_'+wk); choreDone = d ? JSON.parse(d) : {};
+}
+function saveChores(){ localStorage.setItem('chores_v1', JSON.stringify(chores)); }
+function saveChoreDone(){
+  const wk = getWeekKey(weekOffset);
+  localStorage.setItem('choreDone_'+wk, JSON.stringify(choreDone));
+}
+
+function openChoreModal(id=null){
+  editChoreId = id;
+  document.getElementById('chore-modal-title').textContent = id ? '✏️ Sửa công việc' : '🧹 Thêm công việc';
+  choreCheckedDays = new Set([0,1,2,3,4,5,6]);
+  selChoreColor = TASK_COLORS[2];
+  document.getElementById('cm-name').value = '';
+  document.getElementById('cm-note').value = '';
+  if(id){
+    const ch = chores.find(c=>c.id===id);
+    if(ch){
+      document.getElementById('cm-name').value = ch.name;
+      document.getElementById('cm-note').value = ch.note||'';
+      choreCheckedDays = new Set(ch.days||[0,1,2,3,4,5,6]);
+      selChoreColor = ch.color||TASK_COLORS[2];
+    }
+  }
+  // Day checkboxes
+  const dc = document.getElementById('chore-day-checks'); dc.innerHTML='';
+  DAYS.forEach((d,i)=>{
+    const lbl=document.createElement('label');
+    lbl.className=choreCheckedDays.has(i)?'checked':'';
+    lbl.innerHTML=`<input type="checkbox" ${choreCheckedDays.has(i)?'checked':''}><span>${d}</span>`;
+    lbl.querySelector('input').onchange=e=>{
+      if(e.target.checked) choreCheckedDays.add(i); else choreCheckedDays.delete(i);
+      lbl.className=choreCheckedDays.has(i)?'checked':'';
+    };
+    dc.appendChild(lbl);
+  });
+  renderSwatches('chore-color-swatches', ()=>selChoreColor, c=>{selChoreColor=c;});
+  document.getElementById('chore-modal').classList.add('open');
+}
+function closeChoreModal(){ document.getElementById('chore-modal').classList.remove('open'); }
+
+function saveChore(){
+  const name = document.getElementById('cm-name').value.trim();
+  const note = document.getElementById('cm-note').value.trim();
+  if(!name){ showToast('Vui lòng nhập tên công việc!'); return; }
+  const days = [...choreCheckedDays];
+  if(editChoreId){
+    const ch = chores.find(c=>c.id===editChoreId);
+    if(ch){ ch.name=name; ch.note=note; ch.days=days; ch.color=selChoreColor; }
+  } else {
+    chores.push({id:uid(), name, note, days, color:selChoreColor});
+  }
+  saveChores(); closeChoreModal(); renderChoreTable(); showToast(editChoreId?'Đã cập nhật!':'Đã thêm công việc!');
+}
+
+function deleteChore(id){
+  if(!confirm('Xoá công việc này?')) return;
+  chores = chores.filter(c=>c.id!==id);
+  saveChores(); renderChoreTable(); showToast('Đã xoá!');
+}
+
+function toggleChoreDone(choreId, dayIdx){
+  const wk = getWeekKey(weekOffset);
+  const key = `${wk}_${choreId}_${dayIdx}`;
+  const nv = !choreDone[key];
+  if(nv) choreDone[key]=true; else delete choreDone[key];
+  saveChoreDone(); renderChoreTable();
+  if(nv) showToast('⭐ Giỏi quá!');
+}
+
+function renderChoreTable(){
+  const ws = getWeekStart(weekOffset);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const wk = getWeekKey(weekOffset);
+
+  // Header
+  const hr = document.getElementById('chore-header-row');
+  hr.innerHTML = '<th>Công việc</th>';
+  DAYS.forEach((d,i)=>{
+    const dd = addD(ws,i);
+    const isToday = dd.getTime()===today.getTime();
+    hr.innerHTML += `<th class="${isToday?'today-col':''}">${d}<span class="day-date" style="display:block;font-size:0.68rem;opacity:0.8;margin-top:1px;">${fmt(dd)}</span></th>`;
+  });
+
+  const tbody = document.getElementById('chore-tbody');
+  tbody.innerHTML='';
+
+  if(!chores.length){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-light);font-weight:700;">Chưa có công việc. Bấm "+ Thêm công việc"!</td></tr>`;
+    return;
+  }
+
+  chores.forEach(ch=>{
+    const tr = document.createElement('tr');
+    // Name cell
+    const td0 = document.createElement('td');
+    td0.className='chore-name-cell';
+    td0.style.borderLeft=`4px solid ${ch.color||TASK_COLORS[2]}`;
+    td0.innerHTML=`
+      <div class="chore-title">${ch.name}</div>
+      ${ch.note?`<div class="chore-sub">${ch.note}</div>`:''}
+      <div class="chore-row-controls">
+        <button class="row-ctrl-btn" onclick="openChoreModal('${ch.id}')" title="Sửa">✏️</button>
+        <button class="row-ctrl-btn" onclick="deleteChore('${ch.id}')" title="Xoá">✕</button>
+      </div>
+    `;
+    tr.appendChild(td0);
+
+    // Day cells
+    for(let i=0;i<7;i++){
+      const td = document.createElement('td');
+      if(ch.days && ch.days.includes(i)){
+        const key=`${wk}_${ch.id}_${i}`;
+        const ticked=!!choreDone[key];
+        const div=document.createElement('div');
+        div.className='chore-tick'+(ticked?' ticked':'');
+        div.onclick=()=>toggleChoreDone(ch.id,i);
+        td.appendChild(div);
+      } else {
+        td.style.background='#F8FAFB';
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  });
+
+  // Summary
+  const summary = document.getElementById('chore-summary');
+  summary.innerHTML='';
+  chores.forEach(ch=>{
+    const applicable = (ch.days||[]).length;
+    const doneCount = (ch.days||[]).filter(i=>choreDone[`${wk}_${ch.id}_${i}`]).length;
+    if(!applicable) return;
+    const pill=document.createElement('div');
+    pill.className='chore-summary-pill';
+    pill.style.borderLeftColor=ch.color||TASK_COLORS[2];
+    pill.innerHTML=`${ch.name}: <span>${doneCount}/${applicable}</span>`;
+    summary.appendChild(pill);
+  });
+}
+
 // ── NOTIFICATIONS ──
 let notifTimers = [];
 
@@ -1177,7 +1442,7 @@ function showToast(msg){
 }
 
 // Close on overlay click
-['row-modal','span-modal','cell-modal','reward-modal'].forEach(id=>{
+['row-modal','span-modal','cell-modal','reward-modal','chore-modal'].forEach(id=>{
   document.getElementById(id).onclick=e=>{ if(e.target.id===id) document.getElementById(id).classList.remove('open'); };
 });
 
@@ -1187,9 +1452,11 @@ async function init(){
   updateWeekLabel();
   await loadData();
   loadRewards();
+  loadChores();
   renderTable();
   renderStats();
   renderRewards();
+  renderChoreTable();
   checkNotifSupport();
   if(Notification.permission === 'granted') scheduleNotifications();
 }
