@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bảng theo dõi và khen thưởng bé Bút Bi ⭐</title>
+<!-- Fixed v3: browser-only, no delete-before-save, keeps data after logout/login -->
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -482,15 +483,33 @@ async function dbGet(table,params=''){
 }
 async function dbInsert(table,data){
   const r=await fetch(`${DB_URL}/${table}`,{method:'POST',headers:dbH('return=minimal'),body:JSON.stringify(Array.isArray(data)?data:[data])});
-  if(!r.ok) throw new Error(`INSERT ${table}: ${r.status}`);
+  if(!r.ok){
+    const t = await r.text().catch(()=>'');
+    throw new Error(`INSERT ${table}: ${r.status} ${t}`);
+  }
 }
 async function dbUpsert(table,data,conflict){
   const r=await fetch(`${DB_URL}/${table}?on_conflict=${conflict}`,{method:'POST',headers:dbH('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(Array.isArray(data)?data:[data])});
-  if(!r.ok) throw new Error(`UPSERT ${table}: ${r.status}`);
+  if(!r.ok){
+    const t = await r.text().catch(()=>'');
+    throw new Error(`UPSERT ${table}: ${r.status} ${t}`);
+  }
 }
 async function dbDelete(table,params){
   const r=await fetch(`${DB_URL}/${table}?${params}`,{method:'DELETE',headers:dbH()});
   if(!r.ok) throw new Error(`DELETE ${table}: ${r.status}`);
+}
+
+async function dbPatch(table, params, data){
+  const r = await fetch(`${DB_URL}/${table}?${params}`, {
+    method:'PATCH',
+    headers:dbH('return=minimal'),
+    body: JSON.stringify(data)
+  });
+  if(!r.ok){
+    const t = await r.text().catch(()=>'');
+    throw new Error(`PATCH ${table}: ${r.status} ${t}`);
+  }
 }
 
 // ── LOAD / SAVE ──
@@ -505,8 +524,28 @@ async function loadData(){
 }
 
 async function saveRowsDB(){
-  await dbDelete('schedule_rows',uid_param());
-  if(rows.length) await dbInsert('schedule_rows',rows.map(r=>({...r,user_id:currentUser.id,tasks:JSON.stringify(r.tasks||{})})));
+  if(!currentUser){ showToast('Chưa đăng nhập nên chưa lưu được.'); return; }
+  try{
+    const existingRows = await dbGet('schedule_rows', `select=id&${uid_param()}`);
+    const existingIds = new Set((existingRows || []).map(x => x.id));
+
+    for (const r of rows) {
+      const payload = {
+        ...r,
+        user_id: currentUser.id,
+        tasks: JSON.stringify(r.tasks || {})
+      };
+
+      if (existingIds.has(r.id)) {
+        await dbPatch('schedule_rows', `${uid_param()}&id=eq.${r.id}`, payload);
+      } else {
+        await dbInsert('schedule_rows', payload);
+      }
+    }
+  }catch(e){
+    console.error('saveRowsDB error:', e);
+    showToast('Chưa lưu được lên Supabase. Đừng đăng xuất, thử lưu lại.');
+  }
 }
 
 async function saveComp(key,val){
@@ -583,8 +622,16 @@ async function resetWeek(){
 }
 async function clearAll(){
   if(!confirm('⚠️ Xoá toàn bộ lịch và công việc?')) return;
-  rows=[];chores=[];rewards=[];
-  await saveRowsDB();await saveChores();await saveRewards();
+  rows=[]; chores=[]; rewards=[];
+  try{
+    await dbDelete('schedule_rows', uid_param());
+    await dbDelete('completions', uid_param());
+    await dbDelete('chore_completions', uid_param());
+    await dbDelete('app_settings', `${uid_param()}&key=in.(chores,rewards)`);
+  }catch(e){
+    console.error('clearAll error:', e);
+    showToast('Chưa xoá hết dữ liệu trên Supabase');
+  }
   renderTable();renderChoreTable();renderStats();renderRewards();
   showToast('Đã xoá tất cả!');
 }
@@ -704,9 +751,16 @@ async function toggleDone(rowId,dayIdx){
   if(nv)showToast('🎉 Tốt lắm, cố lên!');
 }
 async function deleteRow(id){
-  if(!confirm('Xoá khung giờ này?'))return;
-  rows=rows.filter(r=>r.id!==id);
-  await saveRowsDB();renderTable();renderStats();showToast('Đã xoá!');
+  if(!confirm('Xoá khung giờ này?')) return;
+  rows = rows.filter(r => r.id !== id);
+  try{
+    await dbDelete('schedule_rows', `${uid_param()}&id=eq.${id}`);
+  }catch(e){
+    console.error('deleteRow error:', e);
+    showToast('Chưa xoá được trên Supabase');
+  }
+  renderTable(); renderStats(); renderRewards();
+  showToast('Đã xoá!');
 }
 async function saveChore(){
   const name=document.getElementById('cm-name').value.trim(),note=document.getElementById('cm-note').value.trim();
