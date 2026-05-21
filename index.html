@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Thời Gian Biểu Của Con ⭐</title>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --sky: #87CEEB;
+  --sky-light: #D6EEF8;
+  --sky-header: #A8D8EA;
+  --pastel-pink: #FFB3C6;
+  --pastel-yellow: #FFF3B0;
+  --pastel-green: #B5EAD7;
+  --pastel-blue: #C7E9FB;
+  --pastel-purple: #E2C9F3;
+  --pastel-orange: #FFDAB9;
+  --pastel-mint: #B8F0E6;
+  --pastel-peach: #FFD4BA;
+  --bg: #EEF7FC;
+  --white: #FFFFFF;
+  --border: #C8E6F5;
+  --text: #3A5068;
+  --text-light: #7DA0B8;
+  --header-bg: #87CEEB;
+  --header-text: #1A3A52;
+  --done-bg: rgba(100,200,150,0.22);
+  --shadow: 0 2px 16px rgba(100,170,210,0.13);
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Quicksand', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--header-bg);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid #6BBCD8;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 10px rgba(100,170,210,0.20);
+}
+header h1 {
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.4rem; font-weight: 800;
+  color: var(--header-text);
+}
+.month-badge {
+  background: rgba(255,255,255,0.55);
+  color: var(--header-text);
+  font-weight: 700; font-size: 0.82rem;
+  border-radius: 20px; padding: 4px 14px;
+  border: 1px solid rgba(255,255,255,0.7);
+}
+
+/* ── CONTROLS ── */
+.controls {
+  display: flex; gap: 8px; padding: 12px 16px 0;
+  flex-wrap: wrap; align-items: center;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 16px; border-radius: 20px;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700; font-size: 0.82rem;
+  cursor: pointer; border: none; transition: all .15s;
+}
+.btn-primary { background: var(--sky); color: var(--header-text); border: 1.5px solid #6BBCD8; }
+.btn-primary:hover { background: #6BBCD8; }
+.btn-outline { background: var(--white); color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { background: var(--sky-light); }
+.btn-danger { background: #FFB3B3; color: #7a2020; border: 1.5px solid #ffaaaa; }
+.btn-danger:hover { background: #ff9999; }
+.btn-sm { padding: 5px 12px; font-size: 0.76rem; }
+.btn-teal { background: var(--pastel-mint); color: #1a6050; border: 1.5px solid #8de0d0; }
+.btn-teal:hover { background: #8de0d0; }
+
+/* ── WEEK NAV ── */
+.week-nav {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px 0;
+}
+.week-nav button {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 50%; width: 30px; height: 30px;
+  cursor: pointer; font-size: 0.95rem; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.week-nav button:hover { background: var(--sky); border-color: #6BBCD8; }
+.week-label { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.week-label span { color: #1A7AAF; }
+
+/* ── TABLE ── */
+.table-wrapper { overflow-x: auto; padding: 14px; -webkit-overflow-scrolling: touch; }
+table {
+  width: 100%; border-collapse: collapse;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  min-width: 700px;
+  border: 1.5px solid var(--border);
+}
+
+/* Header row */
+thead tr th {
+  background: var(--sky-header);
+  color: var(--header-text);
+  font-weight: 700; font-size: 0.8rem;
+  padding: 9px 5px; text-align: center;
+  border: 1px solid #9DCFE8;
+  white-space: nowrap;
+}
+thead tr th:first-child { width: 88px; background: #9DCFE8; }
+th.today-col { background: #6BBCD8 !important; color: #fff !important; }
+th .day-date { display: block; font-weight: 600; font-size: 0.68rem; opacity: 0.8; margin-top: 1px; }
+
+/* Body cells */
+td {
+  border: 1px solid var(--border);
+  padding: 0; vertical-align: middle;
+  position: relative;
+}
+
+/* Time column */
+.time-col {
+  padding: 5px 6px; text-align: center;
+  background: var(--sky-light);
+  vertical-align: middle;
+}
+.time-col .time-range { font-size: 0.7rem; font-weight: 700; color: #1A7AAF; white-space: nowrap; }
+.time-col .dur { font-size: 0.62rem; color: var(--text-light); margin-top: 1px; }
+.row-controls {
+  display: flex; gap: 3px;
+  position: absolute; top: 2px; right: 2px;
+  opacity: 0; transition: opacity .15s; z-index: 2;
+}
+tr:hover .row-controls { opacity: 1; }
+.row-ctrl-btn {
+  background: rgba(255,255,255,0.9); border: 1px solid var(--border);
+  border-radius: 4px; width: 18px; height: 18px;
+  cursor: pointer; font-size: 0.6rem;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); transition: background .12s;
+}
+.row-ctrl-btn:hover { background: #FFB3B3; }
+
+/* Task cell */
+.task-cell {
+  min-height: 46px; cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4px 3px; gap: 2px;
+  transition: filter .12s;
+  position: relative;
+}
+.task-cell:hover { filter: brightness(0.93); }
+.task-cell .task-name {
+  font-size: 0.72rem; font-weight: 700;
+  text-align: center; line-height: 1.25;
+  color: #2D4A5E; word-break: break-word;
+}
+.task-cell .done-badge {
+  display: none; background: rgba(255,255,255,0.75);
+  border-radius: 10px; font-size: 0.62rem;
+  font-weight: 800; color: #1a7a50; padding: 1px 6px;
+}
+.task-cell.done .done-badge { display: block; }
+.task-cell.done::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--done-bg); pointer-events: none;
+}
+.task-cell.done .task-name { opacity: 0.6; text-decoration: line-through; }
+
+/* Span / merged row */
+.span-cell {
+  text-align: center; vertical-align: middle;
+  background: var(--pastel-blue);
+  font-size: 0.76rem; font-weight: 700;
+  color: #1A5070; padding: 8px 6px;
+  border-left: 3px solid #6BBCD8;
+}
+.span-cell.yellow { background: var(--pastel-yellow); border-left-color: #E0C040; color: #5A4A00; }
+.span-cell.green  { background: var(--pastel-green);  border-left-color: #5DC890; color: #1A5030; }
+.span-cell.pink   { background: var(--pastel-pink);   border-left-color: #F080A0; color: #5A1030; }
+.span-cell.mint   { background: var(--pastel-mint);   border-left-color: #40C0A8; color: #104038; }
+
+/* Empty cell */
+.empty-cell {
+  min-height: 46px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.empty-cell:hover { background: var(--sky-light); }
+.add-icon { opacity: 0; font-size: 1rem; color: #6BBCD8; transition: opacity .12s; }
+.empty-cell:hover .add-icon { opacity: 0.6; }
+
+/* Add row button */
+.add-row-btn {
+  width: 100%; background: none; border: none; cursor: pointer;
+  padding: 8px; color: #1A7AAF; font-size: 0.8rem; font-weight: 700;
+  font-family: 'Quicksand', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: background .12s;
+}
+.add-row-btn:hover { background: var(--sky-light); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(30,60,90,0.35);
+  backdrop-filter: blur(3px);
+  z-index: 999; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 18px;
+  padding: 24px 22px; width: 93%; max-width: 430px;
+  box-shadow: 0 12px 48px rgba(100,170,210,0.25);
+  animation: mIn .2s ease;
+}
+@keyframes mIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal h2 { font-family: 'Baloo 2', cursive; font-size: 1.1rem; font-weight: 800; color: #1A7AAF; margin-bottom: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1/-1; }
+.form-group label { font-size: 0.72rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select {
+  border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-family: 'Quicksand', sans-serif;
+  font-size: 0.88rem; font-weight: 600; color: var(--text);
+  outline: none; transition: border-color .12s; background: var(--bg);
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--sky); background: #fff; }
+.dur-display {
+  background: var(--sky-light); border-radius: 8px;
+  padding: 7px 10px; font-size: 0.85rem; font-weight: 700;
+  color: #1A7AAF; text-align: center;
+}
+.day-checks { display: flex; flex-wrap: wrap; gap: 5px; }
+.day-checks label {
+  display: flex; align-items: center; gap: 3px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 16px; padding: 3px 9px;
+  cursor: pointer; font-size: 0.76rem; font-weight: 700;
+  transition: all .12s; text-transform: none !important; letter-spacing: 0 !important;
+}
+.day-checks input[type=checkbox] { display: none; }
+.day-checks label.checked { background: var(--sky); border-color: #6BBCD8; color: #1A3A52; }
+
+/* Row type selector */
+.row-type-btns { display: flex; gap: 6px; }
+.type-btn {
+  flex: 1; padding: 6px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: var(--bg); cursor: pointer; font-family: 'Quicksand', sans-serif;
+  font-size: 0.75rem; font-weight: 700; color: var(--text);
+  transition: all .12s; text-align: center;
+}
+.type-btn.active { background: var(--sky); border-color: #6BBCD8; color: #1A3A52; }
+
+/* Span color picker */
+.span-colors { display: flex; gap: 6px; flex-wrap: wrap; }
+.span-swatch {
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  border: 2.5px solid transparent; transition: all .12s;
+}
+.span-swatch.selected { border-color: #1A5070; transform: scale(1.15); }
+
+/* Color swatches for tasks */
+.color-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch {
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  border: 2.5px solid transparent; transition: all .12s; flex-shrink: 0;
+}
+.swatch.selected { border-color: #1A5070; transform: scale(1.15); }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+/* ── STATS ── */
+.stats-section { padding: 0 14px 20px; }
+.stats-section h2 {
+  font-family: 'Baloo 2', cursive; font-size: 1rem; font-weight: 800;
+  color: var(--text); margin-bottom: 10px; padding-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.stat-card {
+  background: var(--white); border-radius: 12px;
+  padding: 12px 14px; box-shadow: var(--shadow);
+  border-left: 4px solid var(--sky);
+}
+.stat-card .stat-subject { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+.stat-card .stat-nums { display: flex; align-items: baseline; gap: 3px; margin: 4px 0; }
+.stat-done { font-size: 1.3rem; font-weight: 800; color: #3AAA7A; }
+.stat-total { font-size: 0.8rem; font-weight: 600; color: var(--text-light); }
+.stat-bar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.stat-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+/* Loading */
+#loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px; font-weight: 700; color: var(--text-light); gap: 8px;
+}
+.spinner {
+  width: 20px; height: 20px; border: 2.5px solid var(--border);
+  border-top-color: var(--sky); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #1A5070; color: #fff;
+  padding: 9px 20px; border-radius: 20px;
+  font-weight: 700; font-size: 0.82rem;
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 9999;
+}
+#toast.show { opacity: 1; }
+
+footer {
+  text-align: center; padding: 16px;
+  color: var(--text-light); font-size: 0.75rem; font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⭐ Thời Gian Biểu Của Con</h1>
+  <div class="month-badge" id="month-badge">Tháng 5/2026</div>
+</header>
+
+<div class="controls">
+  <button class="btn btn-primary" onclick="openRowModal()">＋ Thêm khung giờ</button>
+  <button class="btn btn-teal" onclick="openSpanModal()">＋ Thêm hàng chú thích</button>
+  <button class="btn btn-outline" onclick="resetWeek()">🔄 Reset tuần</button>
+  <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 Xoá tất cả</button>
+</div>
+
+<div class="week-nav">
+  <button onclick="changeWeek(-1)">‹</button>
+  <div class="week-label">Tuần: <span id="week-label-text"></span></div>
+  <button onclick="changeWeek(1)">›</button>
+  <button class="btn btn-outline btn-sm" onclick="goToday()" style="margin-left:6px">Hôm nay</button>
+</div>
+
+<div class="table-wrapper">
+  <div id="loading"><div class="spinner"></div> Đang tải...</div>
+  <table id="tbl" style="display:none">
+    <thead><tr id="header-row"></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <button class="add-row-btn" onclick="openRowModal()">＋ Thêm khung giờ mới</button>
+</div>
+
+<div class="stats-section">
+  <h2>📊 Thống kê tuần này</h2>
+  <div class="stats-grid" id="stats-grid"></div>
+</div>
+
+<footer>Made with ❤️ for con yêu • Dữ liệu lưu trên Supabase</footer>
+
+<!-- MODAL: Thêm/sửa khung giờ -->
+<div class="modal-overlay" id="row-modal">
+  <div class="modal">
+    <h2 id="row-modal-title">＋ Thêm khung giờ</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Giờ bắt đầu</label>
+        <input type="time" id="f-start" oninput="calcDur()"/>
+      </div>
+      <div class="form-group">
+        <label>Giờ kết thúc</label>
+        <input type="time" id="f-end" oninput="calcDur()"/>
+      </div>
+      <div class="form-group full">
+        <label>Thời lượng tự động</label>
+        <div class="dur-display" id="f-dur">– phút</div>
+      </div>
+      <div class="form-group full">
+        <label>Tên nhiệm vụ (áp dụng cho các ngày chọn)</label>
+        <input type="text" id="f-task" placeholder="Ví dụ: Toán, Tiếng Anh, Game..."/>
+      </div>
+      <div class="form-group full">
+        <label>Áp dụng cho ngày</label>
+        <div class="day-checks" id="day-checks"></div>
+      </div>
+      <div class="form-group full">
+        <label>Màu nhiệm vụ</label>
+        <div class="color-swatches" id="color-swatches"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeRowModal()">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveRow()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Hàng chú thích span -->
+<div class="modal-overlay" id="span-modal">
+  <div class="modal">
+    <h2>＋ Thêm hàng chú thích</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Giờ bắt đầu</label>
+        <input type="time" id="sf-start" oninput="calcSpanDur()"/>
+      </div>
+      <div class="form-group">
+        <label>Giờ kết thúc</label>
+        <input type="time" id="sf-end" oninput="calcSpanDur()"/>
+      </div>
+      <div class="form-group full">
+        <label>Thời lượng</label>
+        <div class="dur-display" id="sf-dur">– phút</div>
+      </div>
+      <div class="form-group full">
+        <label>Nội dung</label>
+        <input type="text" id="sf-text" placeholder="Ví dụ: Ăn cơm, Chuẩn bị đi học..."/>
+      </div>
+      <div class="form-group full">
+        <label>Màu nền</label>
+        <div class="span-colors" id="span-colors"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSpanModal()">Huỷ</button>
+      <button class="btn btn-teal" onclick="saveSpanRow()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Sửa ô đơn lẻ -->
+<div class="modal-overlay" id="cell-modal">
+  <div class="modal">
+    <h2 id="cell-modal-title">✏️ Sửa nhiệm vụ</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Tên nhiệm vụ</label>
+        <input type="text" id="cf-task" placeholder="Nhập nhiệm vụ..."/>
+      </div>
+      <div class="form-group full">
+        <label>Màu</label>
+        <div class="color-swatches" id="cell-swatches"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCellModal()">Huỷ</button>
+      <button class="btn btn-danger btn-sm" onclick="clearCellTask()">Xoá</button>
+      <button class="btn btn-primary" onclick="saveCellEdit()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://etilbevkhbissxlwspxr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_zOnqPCaQAmv8OQXlaZQP1Q_gYdiIBg9';
+// ────────────
+
+const DAYS = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ Nhật'];
+
+const TASK_COLORS = [
+  '#C7E9FB','#FFB3C6','#FFF3B0','#B5EAD7','#E2C9F3',
+  '#FFDAB9','#B8F0E6','#FFD4BA','#D4E8FF','#F9C6D0',
+  '#C6F0D4','#FFC8A2','#D0C6F0','#F0E6C6','#A8DFF0',
+];
+const SPAN_COLORS = [
+  {val:'#C7E9FB',label:'Xanh'},{val:'#FFF3B0',label:'Vàng'},
+  {val:'#B5EAD7',label:'Xanh lá'},{val:'#FFB3C6',label:'Hồng'},
+  {val:'#B8F0E6',label:'Mint'},{val:'#E2C9F3',label:'Tím'},
+  {val:'#FFDAB9',label:'Cam'},{val:'#D4E8FF',label:'Xanh nhạt'},
+];
+
+let sb = null, useDB = false;
+let rows = [];       // {id, type:'task'|'span', start, end, tasks?:{0..6:{name,color}}, spanText?, spanColor?}
+let done = {};       // weekKey_rowId_dayIdx => true
+let weekOffset = 0;
+let editRowId = null;
+let editCellRowId = null, editCellDay = null;
+let selColor = TASK_COLORS[0];
+let selCellColor = TASK_COLORS[0];
+let selSpanColor = SPAN_COLORS[0].val;
+let checkedDays = new Set([0,1,2,3,4,5,6]);
+
+// ── Week helpers ──
+function getWeekStart(off=0){
+  const d=new Date(), day=d.getDay();
+  const m=new Date(d);
+  m.setDate(d.getDate()-(day===0?6:day-1)+off*7);
+  m.setHours(0,0,0,0); return m;
+}
+function getWeekKey(off=0){
+  const d=getWeekStart(off);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function fmt(d){ return `${d.getDate()}/${d.getMonth()+1}`; }
+function addD(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function timeDiff(s,e){
+  const [sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
+  let d=(eh*60+em)-(sh*60+sm); if(d<0)d+=1440; return d;
+}
+
+// ── Supabase ──
+async function initDB(){
+  if(SUPABASE_URL==='https://etilbevkhbissxlwspxr.supabase.co') return false;
+  try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); useDB=true; return true; }
+  catch(e){ return false; }
+}
+
+async function loadData(){
+  if(useDB){
+    try{
+      const {data:r}=await sb.from('schedule_rows').select('*').order('start');
+      if(r) rows=r.map(x=>({...x,tasks:typeof x.tasks==='string'?JSON.parse(x.tasks):x.tasks}));
+      const wk=getWeekKey(weekOffset);
+      const {data:c}=await sb.from('completions').select('*').eq('week_key',wk);
+      done={}; if(c) c.forEach(x=>{ done[x.completion_key]=true; }); return;
+    }catch(e){}
+  }
+  const r=localStorage.getItem('rows_v3'); if(r) rows=JSON.parse(r);
+  const c=localStorage.getItem('done_'+getWeekKey(weekOffset)); done=c?JSON.parse(c):{};
+}
+
+async function saveRowsDB(){
+  if(useDB){
+    try{
+      await sb.from('schedule_rows').delete().neq('id','00000000');
+      if(rows.length) await sb.from('schedule_rows').insert(rows.map(r=>({...r,tasks:JSON.stringify(r.tasks||{})})));
+      return;
+    }catch(e){}
+  }
+  localStorage.setItem('rows_v3',JSON.stringify(rows));
+}
+
+async function saveComp(key,val){
+  const wk=getWeekKey(weekOffset);
+  if(useDB){
+    try{
+      if(val) await sb.from('completions').upsert({completion_key:key,week_key:wk},{onConflict:'completion_key,week_key'});
+      else await sb.from('completions').delete().eq('completion_key',key).eq('week_key',wk);
+      return;
+    }catch(e){}
+  }
+  if(val) done[key]=true; else delete done[key];
+  localStorage.setItem('done_'+wk,JSON.stringify(done));
+}
+
+// ── UI helpers ──
+function calcDur(){
+  const s=document.getElementById('f-start').value, e=document.getElementById('f-end').value;
+  if(!s||!e){document.getElementById('f-dur').textContent='– phút';return;}
+  document.getElementById('f-dur').textContent=timeDiff(s,e)+' phút';
+}
+function calcSpanDur(){
+  const s=document.getElementById('sf-start').value, e=document.getElementById('sf-end').value;
+  if(!s||!e){document.getElementById('sf-dur').textContent='– phút';return;}
+  document.getElementById('sf-dur').textContent=timeDiff(s,e)+' phút';
+}
+
+function renderSwatches(cid, getCol, setCol, colors=TASK_COLORS){
+  const c=document.getElementById(cid); c.innerHTML='';
+  colors.forEach(col=>{
+    const s=document.createElement('div');
+    s.className='swatch'+(getCol()===col?' selected':'');
+    s.style.background=col;
+    s.onclick=()=>{ setCol(col); renderSwatches(cid,getCol,setCol,colors); };
+    c.appendChild(s);
+  });
+}
+function renderSpanSwatches(){
+  const c=document.getElementById('span-colors'); c.innerHTML='';
+  SPAN_COLORS.forEach(({val})=>{
+    const s=document.createElement('div');
+    s.className='span-swatch'+(selSpanColor===val?' selected':'');
+    s.style.background=val;
+    s.onclick=()=>{ selSpanColor=val; renderSpanSwatches(); };
+    c.appendChild(s);
+  });
+}
+function renderDayChecks(){
+  const c=document.getElementById('day-checks'); c.innerHTML='';
+  DAYS.forEach((d,i)=>{
+    const lbl=document.createElement('label');
+    lbl.className=checkedDays.has(i)?'checked':'';
+    lbl.innerHTML=`<input type="checkbox" ${checkedDays.has(i)?'checked':''}><span>${d}</span>`;
+    lbl.querySelector('input').onchange=e=>{
+      if(e.target.checked) checkedDays.add(i); else checkedDays.delete(i);
+      lbl.className=checkedDays.has(i)?'checked':'';
+    };
+    c.appendChild(lbl);
+  });
+}
+
+// ── Modals ──
+function openRowModal(id=null){
+  editRowId=id;
+  document.getElementById('row-modal-title').textContent=id?'✏️ Sửa khung giờ':'＋ Thêm khung giờ';
+  checkedDays=new Set([0,1,2,3,4,5,6]);
+  selColor=TASK_COLORS[0];
+  document.getElementById('f-start').value='';
+  document.getElementById('f-end').value='';
+  document.getElementById('f-task').value='';
+  document.getElementById('f-dur').textContent='– phút';
+  if(id){
+    const row=rows.find(r=>r.id===id);
+    if(row){
+      document.getElementById('f-start').value=row.start;
+      document.getElementById('f-end').value=row.end;
+      calcDur();
+      const t=row.tasks||{};
+      const first=Object.values(t).find(x=>x&&x.name);
+      if(first){ document.getElementById('f-task').value=first.name; selColor=first.color||TASK_COLORS[0]; }
+      checkedDays=new Set(Object.keys(t).map(Number).filter(k=>t[k]&&t[k].name));
+    }
+  }
+  renderDayChecks();
+  renderSwatches('color-swatches',()=>selColor,c=>{selColor=c;});
+  document.getElementById('row-modal').classList.add('open');
+}
+function closeRowModal(){ document.getElementById('row-modal').classList.remove('open'); }
+
+function openSpanModal(){
+  selSpanColor=SPAN_COLORS[0].val;
+  document.getElementById('sf-start').value='';
+  document.getElementById('sf-end').value='';
+  document.getElementById('sf-text').value='';
+  document.getElementById('sf-dur').textContent='– phút';
+  renderSpanSwatches();
+  document.getElementById('span-modal').classList.add('open');
+}
+function closeSpanModal(){ document.getElementById('span-modal').classList.remove('open'); }
+
+function openCellModal(rowId,dayIdx){
+  editCellRowId=rowId; editCellDay=dayIdx;
+  const row=rows.find(r=>r.id===rowId);
+  const t=row&&row.tasks&&row.tasks[dayIdx];
+  document.getElementById('cell-modal-title').textContent=`✏️ ${DAYS[dayIdx]} — ${row?row.start+' - '+row.end:''}`;
+  document.getElementById('cf-task').value=t?t.name:'';
+  selCellColor=t?(t.color||TASK_COLORS[0]):TASK_COLORS[0];
+  renderSwatches('cell-swatches',()=>selCellColor,c=>{selCellColor=c;});
+  document.getElementById('cell-modal').classList.add('open');
+}
+function closeCellModal(){ document.getElementById('cell-modal').classList.remove('open'); }
+
+// ── Save ──
+async function saveRow(){
+  const s=document.getElementById('f-start').value;
+  const e=document.getElementById('f-end').value;
+  const name=document.getElementById('f-task').value.trim();
+  if(!s||!e){ showToast('Vui lòng nhập giờ!'); return; }
+  if(editRowId){
+    const row=rows.find(r=>r.id===editRowId);
+    if(row){ row.start=s; row.end=e; if(name) checkedDays.forEach(i=>{ row.tasks=row.tasks||{}; row.tasks[i]={name,color:selColor}; }); }
+  } else {
+    const tasks={};
+    if(name) checkedDays.forEach(i=>{ tasks[i]={name,color:selColor}; });
+    rows.push({id:uid(),type:'task',start:s,end:e,tasks});
+  }
+  rows.sort((a,b)=>a.start.localeCompare(b.start));
+  await saveRowsDB();
+  closeRowModal(); renderTable(); renderStats();
+  showToast(editRowId?'Đã cập nhật!':'Đã thêm khung giờ!');
+}
+
+async function saveSpanRow(){
+  const s=document.getElementById('sf-start').value;
+  const e=document.getElementById('sf-end').value;
+  const text=document.getElementById('sf-text').value.trim();
+  if(!s||!e||!text){ showToast('Vui lòng điền đầy đủ!'); return; }
+  rows.push({id:uid(),type:'span',start:s,end:e,spanText:text,spanColor:selSpanColor,tasks:{}});
+  rows.sort((a,b)=>a.start.localeCompare(b.start));
+  await saveRowsDB();
+  closeSpanModal(); renderTable(); renderStats();
+  showToast('Đã thêm hàng chú thích!');
+}
+
+async function saveCellEdit(){
+  const name=document.getElementById('cf-task').value.trim();
+  const row=rows.find(r=>r.id===editCellRowId);
+  if(row){ row.tasks=row.tasks||{}; row.tasks[editCellDay]=name?{name,color:selCellColor}:null; }
+  await saveRowsDB();
+  closeCellModal(); renderTable(); renderStats(); showToast('Đã lưu!');
+}
+async function clearCellTask(){
+  const row=rows.find(r=>r.id===editCellRowId);
+  if(row&&row.tasks) row.tasks[editCellDay]=null;
+  await saveRowsDB();
+  closeCellModal(); renderTable(); renderStats();
+}
+
+async function toggleDone(rowId,dayIdx){
+  const wk=getWeekKey(weekOffset);
+  const key=`${wk}_${rowId}_${dayIdx}`;
+  const nv=!done[key];
+  if(nv) done[key]=true; else delete done[key];
+  await saveComp(key,nv);
+  renderTable(); renderStats();
+  if(nv) showToast('🎉 Giỏi lắm! Con đã hoàn thành!');
+}
+
+async function deleteRow(id){
+  if(!confirm('Xoá khung giờ này?')) return;
+  rows=rows.filter(r=>r.id!==id);
+  await saveRowsDB(); renderTable(); renderStats(); showToast('Đã xoá!');
+}
+
+async function resetWeek(){
+  if(!confirm('Reset hoàn thành tuần này?')) return;
+  const wk=getWeekKey(weekOffset);
+  if(useDB){ try{ await sb.from('completions').delete().eq('week_key',wk); }catch(e){} }
+  done={}; localStorage.removeItem('done_'+wk);
+  renderTable(); renderStats(); showToast('Đã reset!');
+}
+
+async function clearAll(){
+  if(!confirm('Xoá toàn bộ dữ liệu?')) return;
+  rows=[]; done=[];
+  await saveRowsDB(); localStorage.clear();
+  renderTable(); renderStats(); showToast('Đã xoá tất cả!');
+}
+
+function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); }); }
+function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(()=>{ renderTable(); renderStats(); }); }
+function updateWeekLabel(){
+  const ws=getWeekStart(weekOffset), we=addD(ws,6);
+  document.getElementById('week-label-text').textContent=`${fmt(ws)} – ${fmt(we)}`;
+  document.getElementById('month-badge').textContent=`Tháng ${ws.getMonth()+1}/${ws.getFullYear()}`;
+}
+
+// ── Render table ──
+function renderTable(){
+  const ws=getWeekStart(weekOffset);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const wk=getWeekKey(weekOffset);
+
+  // Header
+  const hr=document.getElementById('header-row');
+  hr.innerHTML='<th>Thời gian</th>';
+  DAYS.forEach((d,i)=>{
+    const dd=addD(ws,i);
+    const isToday=dd.getTime()===today.getTime();
+    hr.innerHTML+=`<th class="${isToday?'today-col':''}">${d}<span class="day-date">${fmt(dd)}</span></th>`;
+  });
+
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+
+  if(rows.length===0){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-light);font-weight:700;">Chưa có khung giờ nào. Bấm "+ Thêm khung giờ" để bắt đầu!</td></tr>`;
+    document.getElementById('tbl').style.display='table';
+    document.getElementById('loading').style.display='none';
+    return;
+  }
+
+  rows.forEach(row=>{
+    const dur=timeDiff(row.start,row.end);
+    const tr=document.createElement('tr');
+
+    // Time col
+    const td0=document.createElement('td');
+    td0.className='time-col';
+    td0.style.position='relative';
+    td0.innerHTML=`<div class="time-range">${row.start}–${row.end}</div><div class="dur">${dur>0?dur+'p':''}</div>`;
+    const ctrl=document.createElement('div');
+    ctrl.className='row-controls';
+    if(row.type!=='span'){
+      ctrl.innerHTML=`<button class="row-ctrl-btn" onclick="openRowModal('${row.id}')" title="Sửa">✏️</button><button class="row-ctrl-btn" onclick="deleteRow('${row.id}')" title="Xoá">✕</button>`;
+    } else {
+      ctrl.innerHTML=`<button class="row-ctrl-btn" onclick="deleteRow('${row.id}')" title="Xoá">✕</button>`;
+    }
+    td0.appendChild(ctrl);
+    tr.appendChild(td0);
+
+    if(row.type==='span'){
+      // Span row: one merged cell across all 7 days
+      const td=document.createElement('td');
+      td.colSpan=7;
+      td.className='span-cell';
+      td.style.background=row.spanColor||'#C7E9FB';
+      td.textContent=row.spanText||'';
+      tr.appendChild(td);
+    } else {
+      // Task row: 7 day cells
+      for(let i=0;i<7;i++){
+        const task=row.tasks&&row.tasks[i];
+        const key=`${wk}_${row.id}_${i}`;
+        const isDone=!!done[key];
+        const td=document.createElement('td');
+
+        if(task&&task.name){
+          const cell=document.createElement('div');
+          cell.className='task-cell'+(isDone?' done':'');
+          cell.style.background=task.color||TASK_COLORS[0];
+          cell.innerHTML=`<div class="task-name">${task.name}</div><div class="done-badge">✓ Done</div>`;
+          let pt;
+          cell.onmousedown=()=>{ pt=setTimeout(()=>openCellModal(row.id,i),600); };
+          cell.onmouseup=()=>clearTimeout(pt);
+          cell.ontouchstart=()=>{ pt=setTimeout(()=>openCellModal(row.id,i),600); };
+          cell.ontouchend=()=>clearTimeout(pt);
+          cell.onclick=e=>{ e.stopPropagation(); toggleDone(row.id,i); };
+          cell.oncontextmenu=e=>{ e.preventDefault(); openCellModal(row.id,i); };
+          td.appendChild(cell);
+        } else {
+          const emp=document.createElement('div');
+          emp.className='empty-cell';
+          emp.innerHTML='<span class="add-icon">＋</span>';
+          emp.onclick=()=>openCellModal(row.id,i);
+          td.appendChild(emp);
+        }
+        tr.appendChild(td);
+      }
+    }
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('tbl').style.display='table';
+  document.getElementById('loading').style.display='none';
+}
+
+// ── Stats ──
+function renderStats(){
+  const wk=getWeekKey(weekOffset);
+  const map={};
+  rows.forEach(row=>{
+    if(row.type!=='task') return;
+    for(let i=0;i<7;i++){
+      const t=row.tasks&&row.tasks[i];
+      if(!t||!t.name) continue;
+      if(!map[t.name]) map[t.name]={done:0,total:0,color:t.color};
+      map[t.name].total++;
+      if(done[`${wk}_${row.id}_${i}`]) map[t.name].done++;
+    }
+  });
+  const grid=document.getElementById('stats-grid');
+  grid.innerHTML='';
+  if(!Object.keys(map).length){
+    grid.innerHTML='<div style="color:var(--text-light);font-weight:600;font-size:0.82rem;">Chưa có dữ liệu.</div>';
+    return;
+  }
+  Object.entries(map).sort((a,b)=>b[1].total-a[1].total).forEach(([name,info])=>{
+    const pct=info.total?Math.round(info.done/info.total*100):0;
+    const card=document.createElement('div');
+    card.className='stat-card';
+    card.style.borderLeftColor=info.color||'var(--sky)';
+    card.innerHTML=`<div class="stat-subject">${name}</div><div class="stat-nums"><span class="stat-done">${info.done}</span><span class="stat-total">/ ${info.total} (${pct}%)</span></div><div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${info.color||'var(--sky)'}"></div></div>`;
+    grid.appendChild(card);
+  });
+}
+
+// Toast
+let tt;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// Close on overlay click
+['row-modal','span-modal','cell-modal'].forEach(id=>{
+  document.getElementById(id).onclick=e=>{ if(e.target.id===id) document.getElementById(id).classList.remove('open'); };
+});
+
+// ── Init ──
+async function init(){
+  await initDB();
+  updateWeekLabel();
+  await loadData();
+  renderTable();
+  renderStats();
+}
+init();
+</script>
+</body>
+</html>
