@@ -798,7 +798,7 @@ function timeDiff(s,e){
 
 // ── Supabase ──
 async function initDB(){
-  if(SUPABASE_URL==='https://etilbevkhbissxlwspxr.supabase.co') return false;
+  if(SUPABASE_URL==='YOUR_SUPABASE_URL' || SUPABASE_KEY==='YOUR_SUPABASE_ANON_KEY') return false;
   try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); useDB=true; return true; }
   catch(e){ return false; }
 }
@@ -1016,8 +1016,8 @@ async function clearAll(){
   renderTable(); renderStats(); showToast('Đã xoá tất cả!');
 }
 
-function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(()=>{ loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
-function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(()=>{ loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
+function changeWeek(d){ weekOffset+=d; updateWeekLabel(); loadData().then(async()=>{ await loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
+function goToday(){ weekOffset=0; updateWeekLabel(); loadData().then(async()=>{ await loadChores(); renderTable(); renderStats(); renderRewards(); renderChoreTable(); }); }
 function updateWeekLabel(){
   const ws=getWeekStart(weekOffset), we=addD(ws,6);
   document.getElementById('week-label-text').textContent=`${fmt(ws)} – ${fmt(we)}`;
@@ -1216,11 +1216,23 @@ function renderStats(){
 
 let rewards = []; // [{id, subject, pct, reward}]
 
-function loadRewards(){
+async function loadRewards(){
+  if(useDB){
+    try{
+      const {data}=await sb.from('app_settings').select('value').eq('key','rewards').single();
+      if(data) rewards=JSON.parse(data.value); return;
+    }catch(e){}
+  }
   const r=localStorage.getItem('rewards_v1');
   if(r) rewards=JSON.parse(r);
 }
-function saveRewards(){
+async function saveRewards(){
+  if(useDB){
+    try{
+      await sb.from('app_settings').upsert({key:'rewards',value:JSON.stringify(rewards)},{onConflict:'key'});
+      return;
+    }catch(e){}
+  }
   localStorage.setItem('rewards_v1',JSON.stringify(rewards));
 }
 
@@ -1390,14 +1402,39 @@ let editChoreId = null;
 let selChoreColor = TASK_COLORS[2]; // default green-ish
 let choreCheckedDays = new Set([0,1,2,3,4,5,6]);
 
-function loadChores(){
+async function loadChores(){
+  if(useDB){
+    try{
+      const {data:cd}=await sb.from('app_settings').select('value').eq('key','chores').single();
+      if(cd) chores=JSON.parse(cd.value);
+      const wk=getWeekKey(weekOffset);
+      const {data:dd}=await sb.from('chore_completions').select('*').eq('week_key',wk);
+      choreDone={}; if(dd) dd.forEach(x=>{ choreDone[x.completion_key]=true; }); return;
+    }catch(e){}
+  }
   const c = localStorage.getItem('chores_v1'); if(c) chores = JSON.parse(c);
   const wk = getWeekKey(weekOffset);
   const d = localStorage.getItem('choreDone_'+wk); choreDone = d ? JSON.parse(d) : {};
 }
-function saveChores(){ localStorage.setItem('chores_v1', JSON.stringify(chores)); }
-function saveChoreDone(){
+async function saveChores(){
+  if(useDB){
+    try{
+      await sb.from('app_settings').upsert({key:'chores',value:JSON.stringify(chores)},{onConflict:'key'});
+      return;
+    }catch(e){}
+  }
+  localStorage.setItem('chores_v1', JSON.stringify(chores));
+}
+async function saveChoreDone(key, val){
   const wk = getWeekKey(weekOffset);
+  if(useDB){
+    try{
+      if(val) await sb.from('chore_completions').upsert({completion_key:key,week_key:wk},{onConflict:'completion_key,week_key'});
+      else await sb.from('chore_completions').delete().eq('completion_key',key).eq('week_key',wk);
+      return;
+    }catch(e){}
+  }
+  if(val) choreDone[key]=true; else delete choreDone[key];
   localStorage.setItem('choreDone_'+wk, JSON.stringify(choreDone));
 }
 
@@ -1454,12 +1491,13 @@ function deleteChore(id){
   saveChores(); renderChoreTable(); showToast('Đã xoá!');
 }
 
-function toggleChoreDone(choreId, dayIdx){
+async function toggleChoreDone(choreId, dayIdx){
   const wk = getWeekKey(weekOffset);
   const key = `${wk}_${choreId}_${dayIdx}`;
   const nv = !choreDone[key];
   if(nv) choreDone[key]=true; else delete choreDone[key];
-  saveChoreDone(); renderChoreTable(); renderStats();
+  await saveChoreDone(key, nv);
+  renderChoreTable(); renderStats();
   if(nv) showToast('⭐ Giỏi quá!');
 }
 
@@ -1645,8 +1683,8 @@ async function init(){
   await initDB();
   updateWeekLabel();
   await loadData();
-  loadRewards();
-  loadChores();
+  await loadRewards();
+  await loadChores();
   renderTable();
   renderStats();
   renderRewards();
