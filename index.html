@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bảng theo dõi và khen thưởng bé Bút Bi ⭐</title>
-<!-- Fixed v3: browser-only, no delete-before-save, keeps data after logout/login -->
+<!-- Fixed v4: weekly schedule rows, browser-only, no delete-before-save, keeps data after logout/login -->
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -516,9 +516,16 @@ async function dbPatch(table, params, data){
 const uid_param=()=>`user_id=eq.${currentUser.id}`;
 
 async function loadData(){
-  const r=await dbGet('schedule_rows',`select=*&${uid_param()}&order=start.asc`);
-  rows=r.map(x=>({...x,tasks:typeof x.tasks==='string'?JSON.parse(x.tasks):x.tasks}));
   const wk=getWeekKey(weekOffset);
+
+  // Mỗi tuần dùng một bộ schedule_rows riêng theo week_key.
+  // Nếu là tuần hiện tại và dữ liệu cũ chưa có week_key, app sẽ lấy tạm dữ liệu cũ để bạn không bị mất lịch.
+  let r=await dbGet('schedule_rows',`select=*&${uid_param()}&week_key=eq.${wk}&order=start.asc`);
+  if((!r || r.length===0) && weekOffset===0){
+    r=await dbGet('schedule_rows',`select=*&${uid_param()}&week_key=is.null&order=start.asc`);
+  }
+
+  rows=(r||[]).map(x=>({...x,tasks:typeof x.tasks==='string'?JSON.parse(x.tasks):x.tasks}));
   const c=await dbGet('completions',`select=*&${uid_param()}&week_key=eq.${wk}`);
   done={}; c.forEach(x=>{done[x.completion_key]=true;});
 }
@@ -526,6 +533,7 @@ async function loadData(){
 async function saveRowsDB(){
   if(!currentUser){ showToast('Chưa đăng nhập nên chưa lưu được.'); return; }
   try{
+    const wk=getWeekKey(weekOffset);
     const existingRows = await dbGet('schedule_rows', `select=id&${uid_param()}`);
     const existingIds = new Set((existingRows || []).map(x => x.id));
 
@@ -533,6 +541,7 @@ async function saveRowsDB(){
       const payload = {
         ...r,
         user_id: currentUser.id,
+        week_key: wk,
         tasks: JSON.stringify(r.tasks || {})
       };
 
